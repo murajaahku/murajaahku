@@ -309,8 +309,9 @@
   const SUPABASE_ANON_KEY = "sb_publishable_2cQGA-G-t_GO3MOsfSMdIg_TOvYlBfh";
   const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut";
 
+  const HAS_REAL_SUPABASE = SUPABASE_URL.startsWith("http") && !SUPABASE_URL.includes("URL_SUPABASE_ANDA") && SUPABASE_ANON_KEY.length > 20;
   let supabase = null;
-  if (!IS_PREVIEW && SUPABASE_URL.startsWith("http")) {
+  if (HAS_REAL_SUPABASE) {
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
@@ -479,7 +480,6 @@
     }
     const surahObj = getSurahByNo(surahNo);
     
-    // Hitung progress hanya untuk target surah yang sedang dikerjakan
     const targetAwal = specificSetoran ? specificSetoran.ayat_awal : (peserta?.target_ayat_awal || 1);
     const targetAkhir = specificSetoran ? specificSetoran.ayat_akhir : (peserta?.target_ayat_akhir || surahObj.ayat);
     const totalAyatTarget = Math.max(1, (targetAkhir - targetAwal + 1));
@@ -541,12 +541,12 @@
       { id: "mtr-1", judul: "Panduan Tajwid & Waqaf Juz 30", deskripsi: "Modul ringkas hukum bacaan tajwid, makharijul huruf, dan pedoman waqaf untuk peserta tahfidz.", nama_file: "Panduan_Tajwid_Juz30.pdf", file_data: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", tanggal: today }
     ];
 
-    if (IS_PREVIEW || !supabase) {
+    if (!HAS_REAL_SUPABASE || !supabase) {
       const saved = localStorage.getItem("murajaahku_preview_db_v6");
       if (saved) {
         const parsed = JSON.parse(saved);
         state.db = {
-          ustaz: parsed.ustaz || initialUstaz,
+          ustaz: Array.isArray(parsed.ustaz) && parsed.ustaz.length > 0 ? parsed.ustaz : initialUstaz,
           ruang_belajar: parsed.ruang_belajar || initialRuang,
           peserta: parsed.peserta || initialPeserta,
           setoran: parsed.setoran || initialSetoran,
@@ -568,9 +568,9 @@
     } catch (err) { console.error("Supabase init error:", err); }
   }
 
-  function savePreviewDB() { if (IS_PREVIEW) localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db)); }
+  function savePreviewDB() { if (!HAS_REAL_SUPABASE) localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db)); }
   async function loadAllFromSupabase() {
-    if (IS_PREVIEW || !supabase) return;
+    if (!HAS_REAL_SUPABASE || !supabase) return;
     const [u, r, p, s, k, m] = await Promise.all([
       supabase.from("ustaz").select("*"), supabase.from("ruang_belajar").select("*"),
       supabase.from("peserta").select("*"), supabase.from("setoran").select("*").order("tanggal_kegiatan", { ascending: false }),
@@ -687,11 +687,9 @@
     const totalSetoranLulus = (state.db.setoran || []).filter(s => s.status_feedback === "Lulus").length;
 
     let sumPersen = 0;
-    const pesertaWithProgress = (state.db.peserta || []).map(p => {
+    (state.db.peserta || []).forEach(p => {
       const info = getActiveSurahProgressInfo(p);
       sumPersen += info.persen;
-      const r = (state.db.ruang_belajar || []).find(x => x.id === p.ruang_id);
-      return { ...p, progInfo: info, namaRuang: r ? r.nama_ruang : "Ruang Tahfidz" };
     });
 
     const avgProgress = totalPeserta > 0 ? Math.round(sumPersen / totalPeserta) : 0;
@@ -1060,7 +1058,6 @@
     if (!arabText) return "";
     if (Number(ayahNo) !== 1 || Number(surahNo) === 1 || Number(surahNo) === 9) return arabText.trim();
     let text = arabText.trim();
-    // Hapus Basmalah di awal ayat 1 dengan mencocokkan kata "الرحيم" di 5 kata pertama agar tidak menyisakan potongan huruf/waqaf
     const words = text.split(/\s+/);
     if (words.length > 4) {
       const firstWords = words.slice(0, 4).join(" ");
@@ -1074,9 +1071,6 @@
   function highlightWaqafMarks(arabText, ayahNo) {
     if (!arabText) return "";
     let formatted = arabText.trim();
-    // Hanya bungkus tanda waqaf yang berdiri sendiri di akhir kata (diikuti spasi atau akhir ayat)
-    // tanpa properti top/margin/padding agar posisi asli mushaf di atas huruf/spasi tidak bergeser.
-    //Catatan: \u06DC (Small High Seen) sengaja TIDAK dibungkus <span> terpisah karena di dalam mushaf sering menjadi bagian dari huruf صراط / يبسط sehingga bila dibungkus akan memutus sambungan huruf Arab.
     const waqafRules = [
       { regex: /(\u06D8)(?=\s|$)/g, cls: "waqaf-mark waqaf-stop", title: "Waqaf Lazim (مـ): Harus berhenti" },
       { regex: /(\u06D7)(?=\s|$)/g, cls: "waqaf-mark waqaf-stop", title: "Al-Waqfu Aula (قلى): Berhenti lebih utama" },
@@ -1152,7 +1146,6 @@
     if (state.mushafCache[surahNo]) return renderFilteredMushafAyahList(surahNo);
     box.innerHTML = `<div class="glass-card" style="text-align:center;padding:30px;"><p style="font-weight:700;color:var(--primary-dark);">Memuat teks Mushaf Standar Indonesia & Terjemahan Kemenag RI...</p></div>`;
 
-    // Prioritas 1: EQuran.id v2 (Mushaf Standar Indonesia Kemenag RI dengan tanda waqaf tepat & ayat 1 sudah terpisah dari Basmalah)
     try {
       const resEq = await fetch(`https://equran.id/api/v2/surat/${surahNo}`);
       const jEq = await resEq.json();
@@ -1166,7 +1159,6 @@
       }
       throw new Error("Fallback to AlQuran Cloud");
     } catch (e1) {
-      // Prioritas 2: AlQuran Cloud Uthmani + Terjemahan Kemenag
       try {
         const [resAr, resId] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/quran-uthmani`),
@@ -1265,7 +1257,7 @@
             <div class="card-title"><i class="ri-user-star-line"></i> Login Ustaz / Ustazah</div>
             ${IS_PREVIEW ? `<span class="badge badge-lulus">Demo: ahmad / 123</span>` : ''}
           </div>
-          <div class="form-group"><label>Username</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." value="${IS_PREVIEW ? 'ahmad' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group"><label>Username (Atau Email Admin)</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." value="${IS_PREVIEW ? 'ahmad' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
           <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." value="${IS_PREVIEW ? '123' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard</button>
           <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">
@@ -1287,11 +1279,11 @@
       <div class="glass-card" style="max-width:500px;margin:0 auto;background:rgba(241, 245, 249, 0.6);border-color:#e2e8f0;">
         <div class="card-header">
           <div class="card-title" style="color:#334155;"><i class="ri-shield-keyhole-line"></i> Login Administrator</div>
-          ${IS_PREVIEW ? `<span class="badge badge-menunggu">Demo: admin@murajaahku.com</span>` : ''}
+          ${!HAS_REAL_SUPABASE ? `<span class="badge badge-menunggu">Demo: admin@murajaahku.com</span>` : ''}
         </div>
-        <div class="form-group"><label>Email Admin</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="admin@domain.com" value="${IS_PREVIEW ? 'admin@murajaahku.com' : ''}" /></div>
-        <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Password..." value="${IS_PREVIEW ? 'admin123' : ''}" /></div>
-        <button class="btn btn-outline" style="width:100%;margin-top:12px;color:#475569;border-color:#cbd5e1;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
+        <div class="form-group"><label>Email Admin</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." value="${!HAS_REAL_SUPABASE ? 'admin@murajaahku.com' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." value="${!HAS_REAL_SUPABASE ? 'admin123' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <button type="button" class="btn btn-outline" style="width:100%;margin-top:12px;color:#475569;border-color:#cbd5e1;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
       </div>
     `;
   }
@@ -1303,8 +1295,11 @@
     const pass = (document.getElementById("regPass")?.value || "").trim();
     if (!nama || !userRaw || !pass) return showToast("Harap lengkapi semua kolom pendaftaran!", true);
 
+    if (userRaw.includes("@")) {
+      return showToast("Ditolak! Username Ustaz tidak boleh menggunakan format Email (@).", true);
+    }
+
     const normalizedUser = userRaw.toLowerCase();
-    // Cek duplikasi username di lokal & database (case-insensitive)
     const isDuplicateLocal = state.db.ustaz.some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
     if (isDuplicateLocal) {
       return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar, gunakan username lain.`, true);
@@ -1314,7 +1309,7 @@
     const fullName = `${gelar} ${cleanNama}`;
     const newU = { id: "ust-" + Date.now(), nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" };
 
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       const { data: exist } = await supabase.from("ustaz").select("id, username");
       if (Array.isArray(exist) && exist.some(u => (u.username || "").trim().toLowerCase() === normalizedUser)) {
         return showToast(`Ditolak! Username "${userRaw}" sudah digunakan, pilih username lain.`, true);
@@ -1334,14 +1329,98 @@
   window.handleUstazLogin = async function() {
     const username = (document.getElementById("loginUstazUser")?.value || "").trim();
     const password = (document.getElementById("loginUstazPass")?.value || "").trim();
+    if (!username || !password) return showToast("Isi username dan password Ustaz!", true);
+
+    // Tolak tegas jika Admin mencoba login di halaman Ustaz (menggunakan email atau username 'admin')
+    if (username.includes("@") || username.toLowerCase() === "admin") {
+      return showToast("Akses Ditolak! Akun Admin dilarang masuk melalui jalur Login Ustaz. Klik tombol Admin di kanan atas.", true);
+    }
+
+    const normUser = username.toLowerCase();
+
+    if (HAS_REAL_SUPABASE && supabase) {
+      const { data: listUstaz, error } = await supabase.from("ustaz").select("*");
+      if (!error && Array.isArray(listUstaz)) {
+        state.db.ustaz = listUstaz;
+      }
+      const found = (state.db.ustaz || []).find(
+        u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
+      );
+      if (!found) return showToast("Username atau password Ustaz salah / akun tidak terdaftar!", true);
+      state.currentUser = found;
+    } else {
+      const found = (state.db.ustaz || []).find(
+        u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
+      );
+      if (!found) return showToast("Username atau password Ustaz salah!", true);
+      state.currentUser = found;
+    }
+
+    state.role = "ustaz";
+    state.ustazActiveRoomId = null;
+    state.ustazSelectedPesertaId = "";
+    state.activeMenu = "ustaz_ringkasan";
+    showToast(`Selamat datang, ${state.currentUser.nama_lengkap}`);
+    renderApp();
+  };
+
+  window.handleAdminLogin = async function() {
+    const email = (document.getElementById("loginAdminEmail")?.value || "").trim();
+    const password = (document.getElementById("loginAdminPass")?.value || "").trim();
+    if (!email || !password) return showToast("Isi Email dan Password Admin!", true);
+
+    const normInput = email.toLowerCase();
+
+    // Tolak tegas jika Ustaz mencoba login di jalur Portal Admin
+    const isUstazAccount = (state.db.ustaz || []).some(
+      u => (u.username || "").trim().toLowerCase() === normInput
+    );
+    if (isUstazAccount || !email.includes("@")) {
+      return showToast("Akses Ditolak! Akun Ustaz/Ustazah dilarang masuk di Portal Admin. Gunakan halaman Login Ustaz.", true);
+    }
+
+    if (HAS_REAL_SUPABASE && supabase) {
+      // Pastikan email yang didaftarkan di Supabase Auth sudah terkonfirmasi otomatis via RPC jika fungsi tersedia
+      try { await supabase.rpc("confirm_admin_email", { target_email: normInput }); } catch (e) {}
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email: normInput, password });
+      if (error || !data?.user) {
+        return showToast("Login Admin gagal: " + (error?.message || "Email atau password tidak sesuai di Supabase Auth"), true);
+      }
+      state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
+      await loadAllFromSupabase();
+    } else {
+      // Mode Preview / Demo
+      state.currentUser = { email: normInput, nama_lengkap: "Administrator" };
+    }
+
+    state.role = "admin";
+    state.activeMenu = "admin_overview";
+    showToast("Berhasil masuk Dashboard Admin");
+    renderApp();
+  };
+
+  window.handleUstazLogin = async function() {
+    const username = (document.getElementById("loginUstazUser")?.value || "").trim();
+    const password = (document.getElementById("loginUstazPass")?.value || "").trim();
     if (!username || !password) return showToast("Isi username dan password!", true);
 
+    // Deteksi Otomatis: Jika pengguna mengetikkan alamat Email (@) di form Ustaz, arahkan ke proses Login Admin
+    if (username.includes("@")) {
+      return await executeAdminAuth(username, password);
+    }
+
+    const lowerUser = username.toLowerCase();
+
     if (!IS_PREVIEW && supabase) {
-      const { data, error } = await supabase.from("ustaz").select("*").eq("username", username).eq("password", password).maybeSingle();
-      if (error || !data) return showToast("Username atau password salah!", true);
-      state.currentUser = data;
+      const { data, error } = await supabase.from("ustaz").select("*");
+      if (error) return showToast("Gagal terhubung ke tabel Ustaz di Supabase!", true);
+      const matched = (data || []).find(u => (u.username || "").trim().toLowerCase() === lowerUser && String(u.password) === String(password));
+      if (!matched) return showToast("Username atau password Ustaz salah!", true);
+      state.currentUser = matched;
+      await loadAllFromSupabase();
     } else {
-      const found = state.db.ustaz.find(u => u.username === username && u.password === password);
+      const found = state.db.ustaz.find(u => (u.username || "").trim().toLowerCase() === lowerUser && String(u.password) === String(password));
       if (!found) return showToast("Username atau password salah!", true);
       state.currentUser = found;
     }
@@ -1349,19 +1428,37 @@
     showToast(`Selamat datang, ${state.currentUser.nama_lengkap}`); renderApp();
   };
 
+  async function executeAdminAuth(email, password) {
+    if (!IS_PREVIEW && supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.message && error.message.toLowerCase().includes("email not confirmed")) {
+          return showToast("Email Admin belum dikonfirmasi! Jalankan perintah UPDATE auth.users di SQL Editor Supabase.", true);
+        }
+        return showToast(`Login Admin gagal: ${error.message}`, true);
+      }
+      if (data?.user) {
+        state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
+        await loadAllFromSupabase();
+        state.role = "admin"; state.activeMenu = "admin_overview";
+        showToast("Berhasil masuk Dashboard Admin");
+        renderApp();
+        return;
+      }
+    } else {
+      // Mode Preview / Demo
+      state.currentUser = { email, nama_lengkap: "Administrator" };
+      state.role = "admin"; state.activeMenu = "admin_overview";
+      showToast("Berhasil masuk Admin (Mode Preview)");
+      renderApp();
+    }
+  }
+
   window.handleAdminLogin = async function() {
     const email = (document.getElementById("loginAdminEmail")?.value || "").trim();
     const password = (document.getElementById("loginAdminPass")?.value || "").trim();
     if (!email || !password) return showToast("Isi email dan password Admin!", true);
-
-    if (!IS_PREVIEW && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error || !data.user) return showToast("Login gagal: Periksa kredensial", true);
-      state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
-    } else {
-      state.currentUser = { email, nama_lengkap: "Administrator" };
-    }
-    state.role = "admin"; state.activeMenu = "admin_overview"; showToast("Berhasil masuk Admin"); renderApp();
+    await executeAdminAuth(email, password);
   };
 
   let ustazSelectedCategories = []; let ustazSelectedStatus = "Lulus";
@@ -1401,6 +1498,8 @@
     }
 
     const activeRoom = myRooms.find(r => r.id === state.ustazActiveRoomId);
+    if (!activeRoom) { state.ustazActiveRoomId = null; return renderUstazRingkasan(container); }
+
     document.getElementById("pageHeaderTitle").textContent = activeRoom.nama_ruang;
     document.getElementById("pageHeaderSub").textContent = `Kode: ${activeRoom.kode_ruang}`;
 
@@ -1876,7 +1975,6 @@
     const targetUstaz = state.db.ustaz.find(u => u.id === id);
     const roomIds = state.db.ruang_belajar.filter(r => r.ustaz_id === id).map(r => r.id);
 
-    // Hapus akun Ustaz beserta ruang dan peserta terkait agar tidak ada akses tersisa
     state.db.ustaz = state.db.ustaz.filter(u => u.id !== id);
     state.db.ruang_belajar = state.db.ruang_belajar.filter(r => r.ustaz_id !== id);
     state.db.peserta = state.db.peserta.filter(p => !roomIds.includes(p.ruang_id));
@@ -2142,10 +2240,9 @@
   window.adminDeleteSetoran = async function(id) { const tgt = state.db.setoran.find(s=>s.id===id); state.db.setoran = state.db.setoran.filter(s=>s.id!==id); if(tgt) recomputePesertaProgressFromSetoran(tgt.peserta_id); if(!IS_PREVIEW && supabase) await supabase.from("setoran").delete().eq("id",id); savePreviewDB(); renderApp(); };
 
   function renderApp() {
-    // Proteksi Keamanan: Jika sedang dalam sesi Ustaz namun akunnya telah dihapus oleh Admin, otomatis keluarkan & cabut akses
     if (state.role === "ustaz") {
       const stillExists = state.currentUser && (state.db.ustaz || []).some(
-        u => u.id === state.currentUser.id && u.username === state.currentUser.username
+        u => u.id === state.currentUser.id && (u.username || "").toLowerCase() === (state.currentUser.username || "").toLowerCase()
       );
       if (!stillExists) {
         state.role = "public";
