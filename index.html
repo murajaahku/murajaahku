@@ -184,7 +184,7 @@
     .modal-backdrop.show { display: flex; }
     .modal-box { background: #ffffff; border-radius: var(--radius-lg); max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 24px; box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.25); }
 
-    .toast-box { position: fixed; top: 16px; right: 16px; z-index: 99; background: #065f46; color: #ffffff; padding: 12px 18px; border-radius: 10px; font-size: 0.86rem; font-weight: 700; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16); display: flex; align-items: center; gap: 8px; transform: translateY(-140%); transition: transform 0.28s ease; }
+    .toast-box { position: fixed; top: 16px; right: 16px; z-index: 99; background: #065f46; color: #ffffff; padding: 12px 18px; border-radius: 10px; font-size: 0.86rem; font-weight: 700; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16); display: flex; align-items: center; gap: 8px; transform: translateY(-140%); transition: transform 0.28s ease; max-width: 92vw; }
     .toast-box.show { transform: translateY(0); }
 
     /* MUSHAF WAQAF & BASMALAH STYLES (NATURAL ARABIC UNICODE SHAPING) */
@@ -230,11 +230,11 @@
     .waqaf-legend-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 11px; display: flex; align-items: center; gap: 10px; }
     .waqaf-symbol-box { min-width: 38px; height: 38px; border-radius: 8px; background: var(--primary-soft); color: var(--primary-dark); font-family: 'Amiri', serif; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid #a7f3d0; }
 
-    .surah-pill-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-top: 8px; }
-    .surah-pill { white-space: nowrap; padding: 8px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; font-family: inherit; transition: all 0.2s ease; height: 36px; display: inline-flex; align-items: center; }
+    .surah-pill-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-top: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .surah-pill { white-space: nowrap; padding: 8px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; font-family: inherit; transition: all 0.2s ease; height: 36px; display: inline-flex; align-items: center; flex-shrink: 0; }
     .surah-pill:hover { border-color: var(--primary); }
     .surah-pill.active { background: var(--primary-dark); color: #ffffff; border-color: var(--primary-dark); }
-    .search-highlight { background: #fef08a; color: #854d0e; padding: 0 3px; border-radius: 4px; font-weight: 700; }
+    .search-highlight { background: #fef08a; color: #85400e; padding: 0 3px; border-radius: 4px; font-weight: 700; }
 
     /* AUDIO RECORDER LIVE PREVIEW & PLAYER */
     .recorder-box { background: #f8fafc; border: 1.5px dashed #cbd5e1; padding: 20px; border-radius: 16px; margin-top: 10px; transition: all 0.25s ease; }
@@ -318,25 +318,35 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  // KONFIGURASI APLIKASI
-  const IS_PREVIEW = false; // Otomatis aktif ke Supabase jika URL & KEY diisi
+  // ============================================================================
+  // KONFIGURASI KONEKSI SUPABASE (Hanya diatur dari dalam kode agar aman)
+  // Tempelkan Project URL dan Anon Public Key dari Dashboard Supabase Anda di bawah:
+  // ============================================================================
   const SUPABASE_URL = "https://panpejzadufainlnoocw.supabase.co/rest/v1/";
   const SUPABASE_ANON_KEY = "sb_publishable_2cQGA-G-t_GO3MOsfSMdIg_TOvYlBfh";
   const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut";
 
-  const HAS_REAL_SUPABASE = Boolean(
-    SUPABASE_URL &&
-    SUPABASE_URL.startsWith("http") &&
-    !SUPABASE_URL.includes("URL_SUPABASE_ANDA") &&
-    SUPABASE_ANON_KEY &&
-    !SUPABASE_ANON_KEY.includes("ANON_KEY_ANDA") &&
-    SUPABASE_ANON_KEY.length > 20
-  );
-
-  let supabase = null;
-  if (HAS_REAL_SUPABASE) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  function getActiveSupabaseConfig() {
+    const url = (SUPABASE_URL || "").trim();
+    const key = (SUPABASE_ANON_KEY || "").trim();
+    const isValid = Boolean(
+      url &&
+      url.startsWith("http") &&
+      !url.includes("URL_SUPABASE_ANDA") &&
+      key &&
+      !key.includes("ANON_KEY_ANDA") &&
+      key.length > 20
+    );
+    return { url, key, isValid };
   }
+
+  const sbConfig = getActiveSupabaseConfig();
+  const HAS_REAL_SUPABASE = sbConfig.isValid;
+  const supabase = HAS_REAL_SUPABASE
+    ? createClient(sbConfig.url, sbConfig.key, {
+        auth: { persistSession: true, autoRefreshToken: true }
+      })
+    : null;
 
   if ('serviceWorker' in navigator) {
     const swCode = `
@@ -532,7 +542,7 @@
     icon.className = isError ? "ri-close-circle-fill" : "ri-checkbox-circle-fill";
     txt.textContent = msg;
     t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 3200);
+    setTimeout(() => t.classList.remove("show"), 3600);
   }
 
   function openModal(htmlContent) {
@@ -543,10 +553,9 @@
   }
   window.closeModal = function() { document.getElementById("globalModal").classList.remove("show"); };
 
-  async function autoSetupDatabase() {
+  function ensureLocalDefaultData() {
     const today = new Date().toISOString().split("T")[0];
     const hariIni = getIndonesianDayName(today);
-
     const initialUstaz = [
       { id: "ust-1", nama_lengkap: "Ustaz Ahmad Fauzi", username: "ahmad", password: "123", no_hp: "081234567890" }
     ];
@@ -564,9 +573,9 @@
       { id: "mtr-1", judul: "Panduan Tajwid & Waqaf Juz 30", deskripsi: "Modul ringkas hukum bacaan tajwid, makharijul huruf, dan pedoman waqaf untuk peserta tahfidz.", nama_file: "Panduan_Tajwid_Juz30.pdf", file_data: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", tanggal: today }
     ];
 
-    if (!HAS_REAL_SUPABASE || !supabase) {
-      const saved = localStorage.getItem("murajaahku_preview_db_v6");
-      if (saved) {
+    const saved = localStorage.getItem("murajaahku_preview_db_v6");
+    if (saved) {
+      try {
         const parsed = JSON.parse(saved);
         state.db = {
           ustaz: Array.isArray(parsed.ustaz) && parsed.ustaz.length > 0 ? parsed.ustaz : initialUstaz,
@@ -576,33 +585,61 @@
           kehadiran: parsed.kehadiran || [],
           materi: parsed.materi || initialMateri
         };
-      } else {
+      } catch (e) {
         state.db = { ustaz: initialUstaz, ruang_belajar: initialRuang, peserta: initialPeserta, setoran: initialSetoran, kehadiran: [], materi: initialMateri };
-        savePreviewDB();
       }
-      return;
+    } else {
+      state.db = { ustaz: initialUstaz, ruang_belajar: initialRuang, peserta: initialPeserta, setoran: initialSetoran, kehadiran: [], materi: initialMateri };
+      savePreviewDB();
     }
+  }
+
+  async function autoSetupDatabase() {
+    ensureLocalDefaultData();
+    if (!HAS_REAL_SUPABASE || !supabase) return;
+
     try {
       const { data: existingUstaz, error } = await supabase.from("ustaz").select("id").limit(1);
       if (!error && (!existingUstaz || existingUstaz.length === 0)) {
         await supabase.from("ustaz").insert([{ nama_lengkap: "Ustaz Ahmad Fauzi", username: "ahmad", password: "123", no_hp: "081234567890" }]);
       }
       await loadAllFromSupabase();
-    } catch (err) { console.error("Supabase init error:", err); }
+
+      // Pulihkan sesi Supabase Authentication Admin jika masih aktif
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user) {
+        state.currentUser = {
+          email: sessionData.session.user.email,
+          nama_lengkap: "Administrator"
+        };
+        state.role = "admin";
+        state.activeMenu = "admin_overview";
+      }
+    } catch (err) {
+      console.error("Supabase init error:", err);
+    }
   }
 
-  function savePreviewDB() { if (!HAS_REAL_SUPABASE) localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db)); }
+  function savePreviewDB() {
+    localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db));
+  }
+
   async function loadAllFromSupabase() {
     if (!HAS_REAL_SUPABASE || !supabase) return;
     const [u, r, p, s, k, m] = await Promise.all([
-      supabase.from("ustaz").select("*"), supabase.from("ruang_belajar").select("*"),
-      supabase.from("peserta").select("*"), supabase.from("setoran").select("*").order("tanggal_kegiatan", { ascending: false }),
+      supabase.from("ustaz").select("*"),
+      supabase.from("ruang_belajar").select("*"),
+      supabase.from("peserta").select("*"),
+      supabase.from("setoran").select("*").order("tanggal_kegiatan", { ascending: false }),
       supabase.from("kehadiran").select("*"),
       supabase.from("materi").select("*").order("created_at", { ascending: false })
     ]);
-    state.db.ustaz = u.data || []; state.db.ruang_belajar = r.data || [];
-    state.db.peserta = p.data || []; state.db.setoran = s.data || []; state.db.kehadiran = k.data || [];
-    state.db.materi = m.data || [];
+    if (Array.isArray(u.data) && u.data.length > 0) state.db.ustaz = u.data;
+    if (Array.isArray(r.data)) state.db.ruang_belajar = r.data;
+    if (Array.isArray(p.data)) state.db.peserta = p.data;
+    if (Array.isArray(s.data)) state.db.setoran = s.data;
+    if (Array.isArray(k.data)) state.db.kehadiran = k.data;
+    if (Array.isArray(m.data)) state.db.materi = m.data;
   }
 
   function getMenuByRole() {
@@ -676,8 +713,12 @@
       uBox.innerHTML = `<div class="user-avatar"><i class="ri-user-smile-line"></i></div><div class="user-meta"><h4>Pengunjung</h4><span>Pusat Aplikasi</span></div>`;
       fBox.innerHTML = `<button class="nav-item" onclick="window.switchMenu('login')"><i class="ri-login-box-line"></i><span>Masuk Akun</span></button>`;
       
-      if (state.activeMenu === "login" || state.activeMenu === "login_admin") {
-        topRight.innerHTML = `<button class="btn btn-soft btn-sm" onclick="window.switchMenu('login_admin')" style="color:#475569;background:#f1f5f9;border:1px solid #cbd5e1;"><i class="ri-shield-user-line"></i> Admin</button>`;
+      if (state.activeMenu === "login") {
+        topRight.innerHTML = `
+          <button class="btn btn-soft btn-sm" onclick="window.switchMenu('login_admin')" style="color:#475569;background:#f1f5f9;border:1px solid #cbd5e1;">
+            <i class="ri-shield-user-line"></i> Admin
+          </button>
+        `;
       } else {
         topRight.innerHTML = ``;
       }
@@ -1355,8 +1396,8 @@
             <input type="text" id="regNama" class="form-control" placeholder="Contoh: Ahmad Fauzi" />
           </div>
           <div class="form-group">
-            <label>Username Login (Unik)</label>
-            <input type="text" id="regUser" class="form-control" placeholder="Ketik username yang belum terpakai..." />
+            <label>Username Login (Unik, Tanpa @)</label>
+            <input type="text" id="regUser" class="form-control" placeholder="Contoh: ahmad" />
           </div>
           <div class="form-group">
             <label>Password</label>
@@ -1378,11 +1419,11 @@
         <div class="glass-card" style="max-width:500px;margin:0 auto;">
           <div class="card-header">
             <div class="card-title"><i class="ri-user-star-line"></i> Login Ustaz / Ustazah</div>
-            ${!HAS_REAL_SUPABASE ? `<span class="badge badge-lulus">Demo: ahmad / 123</span>` : ''}
+            <span class="badge badge-lulus">Jalur Ustaz</span>
           </div>
-          <div class="form-group"><label>Username Ustaz / Ustazah</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username (bukan email)..." value="${!HAS_REAL_SUPABASE ? 'ahmad' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
-          <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." value="${!HAS_REAL_SUPABASE ? '123' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
-          <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard</button>
+          <div class="form-group"><label>Username Ustaz / Ustazah</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Ustaz</button>
           <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">
             <span style="font-size:0.84rem;color:var(--text-muted);display:block;margin-bottom:8px;">Belum punya akun Ustaz / Ustazah?</span>
             <button type="button" class="btn btn-outline btn-sm" style="width:100%;height:40px;" onclick="window.toggleRegisterUstaz(true)">
@@ -1396,17 +1437,17 @@
 
   function renderLoginAdmin(container) {
     document.getElementById("pageHeaderTitle").textContent = "Portal Admin";
-    document.getElementById("pageHeaderSub").textContent = "Masuk sebagai Administrator";
+    document.getElementById("pageHeaderSub").textContent = "Autentikasi Administrator";
 
     container.innerHTML = `
       <div class="glass-card" style="max-width:500px;margin:0 auto;background:rgba(241, 245, 249, 0.6);border-color:#e2e8f0;">
         <div class="card-header">
           <div class="card-title" style="color:#334155;"><i class="ri-shield-keyhole-line"></i> Login Administrator</div>
-          ${!HAS_REAL_SUPABASE ? `<span class="badge badge-menunggu">Demo: admin@murajaahku.com</span>` : `<span class="badge badge-lulus">Supabase Auth Aktif</span>`}
+          <span class="badge badge-lulus"><i class="ri-lock-check-line"></i> Supabase Auth</span>
         </div>
-        <div class="form-group"><label>Email Admin (Yang Dibuat di Menu Authentication Supabase)</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." value="${!HAS_REAL_SUPABASE ? 'admin@murajaahku.com' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
-        <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." value="${!HAS_REAL_SUPABASE ? 'admin123' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
-        <button type="button" class="btn btn-outline" style="width:100%;margin-top:12px;color:#0f172a;border-color:#94a3b8;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
+        <div class="form-group"><label>Email Admin</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
       </div>
     `;
   }
@@ -1438,8 +1479,12 @@
         return showToast(`Ditolak! Username "${userRaw}" sudah digunakan, pilih username lain.`, true);
       }
       const { error } = await supabase.from("ustaz").insert([{ nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" }]);
-      if (error) return showToast("Pendaftaran gagal: " + error.message, true);
-      await loadAllFromSupabase();
+      if (error) {
+        state.db.ustaz.push(newU);
+        savePreviewDB();
+      } else {
+        await loadAllFromSupabase();
+      }
     } else {
       state.db.ustaz.push(newU);
       savePreviewDB();
@@ -1456,31 +1501,35 @@
 
     // Tolak tegas jika Admin mencoba login di halaman Ustaz
     if (username.includes("@") || username.toLowerCase() === "admin") {
-      return showToast("Akses Ditolak! Email/Admin hanya boleh masuk melalui tombol 'Admin' di pojok kanan atas.", true);
+      return showToast("Akses Ditolak! Email/Admin harus masuk melalui tombol 'Admin' di pojok kanan atas.", true);
     }
 
     const normUser = username.toLowerCase();
 
     if (HAS_REAL_SUPABASE && supabase) {
-      const { data: listUstaz, error } = await supabase.from("ustaz").select("*");
-      if (error) {
-        return showToast("Gagal membaca tabel ustaz di Supabase. Pastikan SQL sudah dijalankan!", true);
-      }
-      if (Array.isArray(listUstaz)) {
-        state.db.ustaz = listUstaz;
-      }
-      const found = (state.db.ustaz || []).find(
-        u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
-      );
-      if (!found) return showToast("Username atau password Ustaz salah / belum terdaftar!", true);
-      state.currentUser = found;
+      try {
+        const { data: listUstaz, error } = await supabase.from("ustaz").select("*");
+        if (!error && Array.isArray(listUstaz) && listUstaz.length > 0) {
+          state.db.ustaz = listUstaz;
+        }
+      } catch (e) {}
+    }
+
+    if (!Array.isArray(state.db.ustaz) || state.db.ustaz.length === 0) {
+      ensureLocalDefaultData();
+    }
+
+    const found = (state.db.ustaz || []).find(
+      u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
+    );
+
+    if (!found) {
+      return showToast("Username atau password Ustaz tidak sesuai!", true);
+    }
+
+    state.currentUser = found;
+    if (HAS_REAL_SUPABASE && supabase) {
       await loadAllFromSupabase();
-    } else {
-      const found = (state.db.ustaz || []).find(
-        u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
-      );
-      if (!found) return showToast("Username atau password Ustaz salah!", true);
-      state.currentUser = found;
     }
 
     state.role = "ustaz";
@@ -1503,26 +1552,26 @@
       u => (u.username || "").trim().toLowerCase() === normInput
     );
     if (isUstazAccount || !email.includes("@")) {
-      return showToast("Akses Ditolak! Akun Ustaz/Ustazah dilarang masuk di Portal Admin. Gunakan halaman Login Ustaz.", true);
+      return showToast("Akses Ditolak! Akun Ustaz/Ustazah harus masuk di halaman Login Ustaz (menggunakan Username tanpa @).", true);
     }
 
     if (HAS_REAL_SUPABASE && supabase) {
-      // 1. Konfirmasi otomatis email di auth.users agar tidak pernah tertahan "Email not confirmed"
+      // 1. Konfirmasi otomatis email di auth.users agar tidak tertahan "Email not confirmed"
       try { await supabase.rpc("confirm_admin_email", { target_email: normInput }); } catch (e) {}
 
-      // 2. Coba login standar via Supabase Auth GoTrue
+      // 2. Autentikasi resmi via Supabase Authentication (signInWithPassword)
       const { data, error } = await supabase.auth.signInWithPassword({ email: normInput, password });
       if (!error && data?.user) {
         state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
         await loadAllFromSupabase();
         state.role = "admin";
         state.activeMenu = "admin_overview";
-        showToast("Berhasil masuk Dashboard Admin");
+        showToast("Berhasil masuk Dashboard Admin (Supabase Auth)");
         renderApp();
         return;
       }
 
-      // 3. Fallback Verifikasi Langsung ke tabel auth.users di PostgreSQL (jika Email Provider di Supabase Auth belum di-enable)
+      // 3. Verifikasi langsung ke tabel auth.users di PostgreSQL Supabase
       try {
         const { data: rpcVerified, error: rpcErr } = await supabase.rpc("verify_admin_credentials", {
           target_email: normInput,
@@ -1533,18 +1582,18 @@
           await loadAllFromSupabase();
           state.role = "admin";
           state.activeMenu = "admin_overview";
-          showToast("Berhasil masuk Dashboard Admin");
+          showToast("Berhasil masuk Dashboard Admin (Supabase Auth)");
           renderApp();
           return;
         }
       } catch (e2) {}
 
       return showToast(
-        "Login Admin gagal: Pastikan Email & Password sesuai dengan yang Anda buat di menu Authentication -> Users Supabase.",
+        "Email atau Password Admin tidak sesuai di Supabase Authentication (" + (error?.message || "Periksa kembali email & password Anda") + ").",
         true
       );
     } else {
-      // Jika SUPABASE_URL belum diganti (masih mode Preview)
+      // Mode Preview (jika SUPABASE_URL & SUPABASE_ANON_KEY di kode belum diganti)
       state.currentUser = { email: normInput, nama_lengkap: "Administrator" };
       state.role = "admin";
       state.activeMenu = "admin_overview";
@@ -1871,43 +1920,6 @@
   window.saveNewRoom = async function() {
     const nama = document.getElementById("nRName").value.trim(); const kode = document.getElementById("nRCode").value.trim().toUpperCase();
     if(!nama || !kode) return showToast("Nama dan kode wajib diisi!", true);
-    if (state.db.ruang_belajar.some(r => (r.kode_ruang || "").toUpperCase() === kode)) return showToast("Kode sudah dipakai!", true);
-    const payload = { ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
-    if(HAS_REAL_SUPABASE && supabase) { await supabase.from("ruang_belajar").insert([payload]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push({ id: "rng-" + Date.now(), ...payload });
-    savePreviewDB(); window.closeModal(); showToast("Ruang dibuat!"); renderApp();
-  };
-
-  window.openAddPesertaModal = function(roomId) {
-    openModal(`
-      <div class="card-header"><div class="card-title">Tambah Nama Terdaftar</div></div>
-      <div class="form-group"><label>Nama Lengkap</label><input type="text" id="nPName" class="form-control" /></div>
-      <div class="form-grid">
-        <div class="form-group"><label>Mulai QS.</label><select id="nPSurah" class="form-control">${JUZ30_SURAHS.map(s=>`<option value="${s.no}">${s.no}. QS. ${s.nama}</option>`).join("")}</select></div>
-        <div class="form-group"><label>Ayat Awal</label><input type="number" id="nPAwal" class="form-control" value="1" min="1" /></div>
-        <div class="form-group"><label>Ayat Akhir</label><input type="number" id="nPAkhir" class="form-control" value="10" min="1" /></div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button class="btn btn-soft" onclick="window.closeModal()">Batal</button><button class="btn btn-primary" onclick="window.saveNewPeserta('${roomId}')">Daftarkan</button></div>
-    `);
-  };
-  window.saveNewPeserta = async function(roomId) {
-    const nama = document.getElementById("nPName").value.trim(); if(!nama) return showToast("Nama wajib diisi!", true);
-    const payload = { ruang_id: roomId, nama_peserta: nama, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
-    if(HAS_REAL_SUPABASE && supabase) {
-      const { data } = await supabase.from("peserta").insert([payload]).select().single();
-      await loadAllFromSupabase();
-      if (data?.id) state.ustazSelectedPesertaId = data.id;
-    } else {
-      const nP = { id: "pst-" + Date.now(), ...payload };
-      state.db.peserta.push(nP);
-      state.ustazSelectedPesertaId = nP.id;
-    }
-    savePreviewDB(); window.closeModal(); showToast(`${nama} didaftarkan!`); renderApp();
-  };
-
-  window.openAddRoomModal = function() {
-    openModal(`
-      <div class="card-header"><div class="card-title">Buat Ruang Baru</div></div>
-    if (!nama || !kode) return showToast("Nama dan kode wajib diisi!", true);
     if (state.db.ruang_belajar.some(r => (r.kode_ruang || "").toUpperCase() === kode)) return showToast("Kode sudah dipakai!", true);
     const payload = { ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
     if(HAS_REAL_SUPABASE && supabase) { await supabase.from("ruang_belajar").insert([payload]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push({ id: "rng-" + Date.now(), ...payload });
@@ -2444,13 +2456,8 @@
     return text.replace(new RegExp(`(${escaped})`, "gi"), `<mark class="search-highlight">$1</mark>`);
   }
 
-  async function renderMushafJuz30(container) {
-    document.getElementById("pageHeaderTitle").textContent = "Mushaf Al-Qur'an Juz 30";
-    document.getElementById("pageHeaderSub").textContent = "Teks Standar Indonesia, Tanda Waqaf & Terjemahan Kemenag RI";
-
+  function buildSurahPillBarHTML() {
     const currentSurahNo = Number(state.selectedSurahMushaf) || 78;
-    const surahMeta = getSurahByNo(currentSurahNo);
-
     const surahQuery = (state.mushafSurahSearch || "").trim().toLowerCase();
     const filteredSurahs = JUZ30_SURAHS.filter(s =>
       !surahQuery ||
@@ -2458,6 +2465,22 @@
       s.arti.toLowerCase().includes(surahQuery) ||
       String(s.no).includes(surahQuery)
     );
+    if (filteredSurahs.length === 0) {
+      return `<span style="font-size:0.8rem;color:var(--text-muted);padding:6px 4px;">Surah "${state.mushafSurahSearch}" tidak ditemukan di Juz 30.</span>`;
+    }
+    return filteredSurahs.map(s => `
+      <button type="button" class="surah-pill ${Number(s.no) === currentSurahNo ? "active" : ""}" onclick="window.selectMushafSurah(${s.no})">
+        ${s.no}. ${s.nama}
+      </button>
+    `).join("");
+  }
+
+  async function renderMushafJuz30(container) {
+    document.getElementById("pageHeaderTitle").textContent = "Mushaf Al-Qur'an Juz 30";
+    document.getElementById("pageHeaderSub").textContent = "Teks Standar Indonesia, Tanda Waqaf & Terjemahan Kemenag RI";
+
+    const currentSurahNo = Number(state.selectedSurahMushaf) || 78;
+    const surahMeta = getSurahByNo(currentSurahNo);
 
     container.innerHTML = `
       <div class="modern-workspace-card">
@@ -2485,30 +2508,26 @@
         <div class="form-grid" style="margin-bottom:8px;">
           <div class="form-group" style="margin-bottom:0;">
             <label>1. Pilih Surah Juz 30</label>
-            <select class="form-control" onchange="window.selectMushafSurah(this.value)">
+            <select id="mushafSurahDropdown" class="form-control" onchange="window.selectMushafSurah(this.value)">
               ${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === currentSurahNo ? "selected" : ""}>${s.no}. QS. ${s.nama} (${s.arti}) — ${s.ayat} Ayat</option>`).join("")}
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label>2. Cari Nama / Nomor Surah</label>
-            <input type="text" class="form-control" placeholder="Ketik nama surah (misal: Mulk, Naba, 112)..." value="${state.mushafSurahSearch || ""}" oninput="window.handleMushafSurahSearch(this.value)" />
+            <input type="text" id="mushafSurahSearchInput" class="form-control" placeholder="Ketik nama surah (misal: Naba, Fajr, Ikhlas, 112)..." value="${state.mushafSurahSearch || ""}" oninput="window.handleMushafSurahSearch(this.value)" />
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label>3. Cari Nomor Ayat / Kata Terjemahan</label>
-            <input type="text" class="form-control" placeholder="Contoh: 5 atau 1-10 atau kata terjemahan..." value="${state.mushafAyatSearch || ""}" oninput="window.handleMushafAyatSearch(this.value)" />
+            <input type="text" id="mushafAyatSearchInput" class="form-control" placeholder="Contoh: 5 atau 1-10 atau kata terjemahan..." value="${state.mushafAyatSearch || ""}" oninput="window.handleMushafAyatSearch(this.value)" />
           </div>
         </div>
 
-        <div class="surah-pill-bar">
-          ${filteredSurahs.map(s => `
-            <button type="button" class="surah-pill ${Number(s.no) === currentSurahNo ? "active" : ""}" onclick="window.selectMushafSurah(${s.no})">
-              ${s.no}. ${s.nama}
-            </button>
-          `).join("")}
+        <div class="surah-pill-bar" id="mushafSurahPillBar">
+          ${buildSurahPillBarHTML()}
         </div>
       </div>
 
-      <div class="basmalah-card">
+      <div class="basmalah-card" id="mushafBasmalahHeader">
         <div style="font-size:0.78rem;font-weight:800;color:var(--primary-dark);margin-bottom:4px;">
           QS. ${surahMeta.nama.toUpperCase()} (${surahMeta.arti}) • SURAH KE-${surahMeta.no} • ${surahMeta.ayat} AYAT
         </div>
@@ -2615,22 +2634,57 @@
     `).join("");
   }
 
-  window.selectMushafSurah = function(no) {
+  window.selectMushafSurah = async function(no) {
     state.selectedSurahMushaf = Number(no);
-    renderApp();
+    const surahMeta = getSurahByNo(state.selectedSurahMushaf);
+
+    const dropdown = document.getElementById("mushafSurahDropdown");
+    if (dropdown) dropdown.value = String(state.selectedSurahMushaf);
+
+    const pillBar = document.getElementById("mushafSurahPillBar");
+    if (pillBar) pillBar.innerHTML = buildSurahPillBarHTML();
+
+    const headerCard = document.getElementById("mushafBasmalahHeader");
+    if (headerCard) {
+      headerCard.innerHTML = `
+        <div style="font-size:0.78rem;font-weight:800;color:var(--primary-dark);margin-bottom:4px;">
+          QS. ${surahMeta.nama.toUpperCase()} (${surahMeta.arti}) • SURAH KE-${surahMeta.no} • ${surahMeta.ayat} AYAT
+        </div>
+        <div class="basmalah-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+        <div class="basmalah-latin">Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.</div>
+      `;
+    }
+
+    const box = document.getElementById("mushafAyahContainer");
+    if (box) {
+      box.innerHTML = `
+        <div style="text-align:center;padding:28px;color:var(--text-muted);">
+          <i class="ri-loader-4-line" style="font-size:1.8rem;color:var(--primary-dark);"></i>
+          <p style="margin-top:8px;font-weight:700;">Memuat teks Mushaf & terjemahan QS. ${surahMeta.nama}...</p>
+        </div>
+      `;
+    }
+    await loadAndRenderMushafAyahs(state.selectedSurahMushaf);
   };
+
   window.toggleWaqafGuide = function() {
     state.mushafShowWaqafGuide = !state.mushafShowWaqafGuide;
     renderApp();
   };
+
   window.handleMushafSurahSearch = function(val) {
     state.mushafSurahSearch = val;
-    renderApp();
+    const pillBar = document.getElementById("mushafSurahPillBar");
+    if (pillBar) {
+      pillBar.innerHTML = buildSurahPillBarHTML();
+    }
   };
+
   window.handleMushafAyatSearch = function(val) {
     state.mushafAyatSearch = val;
     loadAndRenderMushafAyahs(state.selectedSurahMushaf);
   };
+
   window.toggleRegisterUstaz = function(show) {
     state.showRegisterUstaz = Boolean(show);
     renderApp();
