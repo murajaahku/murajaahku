@@ -236,6 +236,20 @@
     .surah-pill.active { background: var(--primary-dark); color: #ffffff; border-color: var(--primary-dark); }
     .search-highlight { background: #fef08a; color: #854d0e; padding: 0 3px; border-radius: 4px; font-weight: 700; }
 
+    /* AUDIO RECORDER LIVE PREVIEW & PLAYER */
+    .recorder-box { background: #f8fafc; border: 1.5px dashed #cbd5e1; padding: 20px; border-radius: 16px; margin-top: 10px; transition: all 0.25s ease; }
+    .recorder-box.is-recording { background: #fef2f2; border-color: #f87171; border-style: solid; }
+    .recorder-box.has-audio { background: #ecfdf5; border-color: #34d399; border-style: solid; }
+    .rec-live-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; background: #ffffff; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+    .rec-live-banner.active { display: flex; }
+    .rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; animation: pulseRec 1s infinite; flex-shrink: 0; }
+    @keyframes pulseRec { 0% { transform: scale(0.95); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.5; } 100% { transform: scale(0.95); opacity: 1; } }
+    .rec-wave-bars { display: flex; align-items: center; gap: 3px; height: 24px; flex: 1; justify-content: center; }
+    .rec-wave-bar { width: 4px; height: 8px; background: #ef4444; border-radius: 99px; transition: height 0.1s ease; }
+    .rec-timer { font-family: monospace; font-size: 1rem; font-weight: 800; color: #b91c1c; min-width: 54px; text-align: right; }
+    .audio-preview-card { display: none; background: #ffffff; border: 1.5px solid #a7f3d0; border-radius: 14px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow-sm); }
+    .audio-preview-card.show { display: block; }
+
     /* BOTTOM NAV HANYA BERANDA & AKUN */
     .bottom-nav { display: none; position: fixed; bottom: 12px; left: 16px; right: 16px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(16, 185, 129, 0.22); border-radius: 16px; padding: 6px 8px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); z-index: 40; justify-content: space-around; align-items: center; }
     .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent; border: none; color: #64748b; font-size: 0.72rem; font-weight: 700; padding: 8px 30px; border-radius: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
@@ -304,12 +318,21 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  const IS_PREVIEW = false;
+  // KONFIGURASI APLIKASI
+  const IS_PREVIEW = false; // Otomatis aktif ke Supabase jika URL & KEY diisi
   const SUPABASE_URL = "https://panpejzadufainlnoocw.supabase.co/rest/v1/";
   const SUPABASE_ANON_KEY = "sb_publishable_2cQGA-G-t_GO3MOsfSMdIg_TOvYlBfh";
   const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut";
 
-  const HAS_REAL_SUPABASE = SUPABASE_URL.startsWith("http") && !SUPABASE_URL.includes("URL_SUPABASE_ANDA") && SUPABASE_ANON_KEY.length > 20;
+  const HAS_REAL_SUPABASE = Boolean(
+    SUPABASE_URL &&
+    SUPABASE_URL.startsWith("http") &&
+    !SUPABASE_URL.includes("URL_SUPABASE_ANDA") &&
+    SUPABASE_ANON_KEY &&
+    !SUPABASE_ANON_KEY.includes("ANON_KEY_ANDA") &&
+    SUPABASE_ANON_KEY.length > 20
+  );
+
   let supabase = null;
   if (HAS_REAL_SUPABASE) {
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -670,9 +693,16 @@
     mNav.innerHTML = menus.map(m => `<button class="bnav-item ${state.activeMenu === m.id ? 'active' : ''}" onclick="window.switchMenu('${m.id}')"><i class="${m.icon}"></i> <span>${m.label}</span></button>`).join("");
   }
 
-  window.switchMenu = function(menuId) { state.activeMenu = menuId; renderApp(); };
+  window.switchMenu = function(menuId) {
+    if (isRecordingAudio) window.stopVoiceRecord();
+    state.activeMenu = menuId;
+    renderApp();
+  };
   window.logoutSession = async function() {
-    if (!IS_PREVIEW && supabase && state.role === "admin") await supabase.auth.signOut();
+    if (isRecordingAudio) window.stopVoiceRecord();
+    if (HAS_REAL_SUPABASE && supabase && state.role === "admin") {
+      try { await supabase.auth.signOut(); } catch (e) {}
+    }
     state.role = "public"; state.currentUser = null; state.ustazActiveRoomId = null; state.ustazSelectedPesertaId = ""; state.activeMenu = "beranda";
     showToast("Berhasil keluar"); renderApp();
   };
@@ -953,11 +983,42 @@
   window.changePublicDate = function(val) { if(val){ state.publicSelectedDate = val; renderApp(); } };
   window.changePublicPesertaFilter = function(val) { state.publicSelectedPesertaId = val || "ALL"; renderApp(); };
 
-  let mediaRecorder = null; let audioChunks = []; let recordedBase64Audio = "";
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recordedBase64Audio = "";
+  let recordedAudioBlobUrl = "";
+  let isRecordingAudio = false;
+  let recTimerInterval = null;
+  let recSeconds = 0;
+  let audioContext = null;
+  let analyserNode = null;
+  let micStream = null;
+  let waveAnimFrame = null;
+
+  function formatRecTime(sec) {
+    const m = String(Math.floor(sec / 60)).padStart(2, "0");
+    const s = String(sec % 60).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  function getSupportedAudioMimeType() {
+    if (typeof MediaRecorder === "undefined") return "";
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/ogg;codecs=opus",
+      "audio/aac"
+    ];
+    for (const t of types) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  }
 
   function renderPublicSetorHafalan(container) {
     document.getElementById("pageHeaderTitle").textContent = "Setor Hafalan";
-    document.getElementById("pageHeaderSub").textContent = "Kirim Rekaman Suara ke Ustaz";
+    document.getElementById("pageHeaderSub").textContent = "Rekam & Dengarkan Suara Sebelum Dikirim ke Ustaz";
 
     const ustazList = state.db.ustaz || [];
     if (!state.setorSelectedUstazId && ustazList.length > 0) state.setorSelectedUstazId = ustazList[0].id;
@@ -971,6 +1032,7 @@
 
     const activeSurahObj = getSurahByNo(state.setorSelectedSurah || 78);
     const hariSetor = getIndonesianDayName(state.setorSelectedDate);
+    const previewSrc = recordedAudioBlobUrl || recordedBase64Audio || "";
 
     container.innerHTML = `
       <div class="modern-workspace-card">
@@ -985,17 +1047,65 @@
           <div class="form-group"><label>5. Mulai Ayat</label><input type="number" id="setorAyatAwalInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${state.setorAyatAwal}" oninput="state.setorAyatAwal = Number(this.value || 1)" /></div>
           <div class="form-group"><label>6. Sampai Ayat (Maks ${activeSurahObj.ayat})</label><input type="number" id="setorAyatAkhirInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${Math.min(activeSurahObj.ayat, state.setorAyatAkhir)}" oninput="state.setorAyatAkhir = Number(this.value || 1)" /></div>
         </div>
-        <div class="form-group" style="background:#f8fafc;border:1.5px dashed #cbd5e1;padding:20px;border-radius:16px;margin-top:10px;">
-          <label style="font-size:0.86rem;font-weight:800;color:var(--text-main);margin-bottom:12px;display:block;">7. Rekam Suara atau Unggah File Audio</label>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
-            <button type="button" class="btn btn-outline" id="btnStartRec" onclick="window.startVoiceRecord()"><i class="ri-record-circle-fill" style="color:#ef4444;font-size:1.3rem;"></i> Mulai Merekam</button>
-            <button type="button" class="btn btn-danger" id="btnStopRec" style="display:none;" onclick="window.stopVoiceRecord()"><i class="ri-stop-circle-fill" style="font-size:1.3rem;"></i> Selesai Merekam</button>
-            <span id="recStatusLabel" style="font-size:0.86rem;color:var(--text-muted);font-weight:700;">${recordedBase64Audio ? '✓ Audio siap dikirim' : 'Klik Mulai atau pilih file audio'}</span>
+
+        <div class="recorder-box ${recordedBase64Audio ? 'has-audio' : ''}" id="recorderBoxContainer">
+          <label style="font-size:0.88rem;font-weight:800;color:var(--text-main);margin-bottom:10px;display:block;">
+            7. Rekam Suara Langsung atau Unggah File Audio
+          </label>
+
+          <!-- LIVE RECORDING PREVIEW BANNER -->
+          <div class="rec-live-banner" id="recLiveBanner">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="rec-dot"></span>
+              <span style="font-size:0.82rem;font-weight:800;color:#b91c1c;">Merekam Suara...</span>
+            </div>
+            <div class="rec-wave-bars" id="recWaveBars">
+              ${Array.from({ length: 16 }).map(() => `<div class="rec-wave-bar"></div>`).join("")}
+            </div>
+            <div class="rec-timer" id="recTimerDisplay">00:00</div>
           </div>
-          <input type="file" accept="audio/*" class="form-control" onchange="window.handleAudioUpload(event)" />
-          <div id="audioPreviewWrap" style="margin-top:14px;display:${recordedBase64Audio ? 'block' : 'none'};"><audio id="onlineAudioPlayer" controls src="${recordedBase64Audio || ''}" style="width:100%;height:44px;"></audio></div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+            <button type="button" class="btn btn-primary" id="btnStartRec" onclick="window.startVoiceRecord()">
+              <i class="ri-mic-fill"></i> ${recordedBase64Audio ? 'Rekam Ulang Suara' : 'Mulai Merekam'}
+            </button>
+            <button type="button" class="btn btn-danger" id="btnStopRec" style="display:none;" onclick="window.stopVoiceRecord()">
+              <i class="ri-stop-circle-fill"></i> Selesai & Preview Rekaman
+            </button>
+            <span id="recStatusLabel" style="font-size:0.82rem;color:var(--text-muted);font-weight:700;">
+              ${recordedBase64Audio ? '✓ Rekaman selesai! Silakan dengarkan hasil di bawah sebelum dikirim.' : 'Klik "Mulai Merekam" lalu bacakan ayat hafalan Anda.'}
+            </span>
+          </div>
+
+          <!-- PREVIEW & PLAYBACK SEBELUM DIKIRIM -->
+          <div class="audio-preview-card ${recordedBase64Audio ? 'show' : ''}" id="audioPreviewWrap">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:0.82rem;font-weight:800;color:var(--primary-dark);display:flex;align-items:center;gap:6px;">
+                <i class="ri-headphone-line" style="font-size:1.1rem;"></i> Preview Hasil Rekaman (Dengarkan Dulu Sebelum Dikirim)
+              </span>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="window.playPreviewAudio()">
+                  <i class="ri-play-circle-line"></i> Putar Suara
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="window.clearRecordedAudio()">
+                  <i class="ri-delete-bin-line"></i> Hapus
+                </button>
+              </div>
+            </div>
+            <audio id="onlineAudioPlayer" controls preload="metadata" src="${previewSrc}" style="width:100%;height:42px;border-radius:8px;"></audio>
+          </div>
+
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+            <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">
+              Atau pilih file rekaman audio dari HP/Laptop Anda:
+            </label>
+            <input type="file" accept="audio/*" class="form-control" onchange="window.handleAudioUpload(event)" />
+          </div>
         </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:14px;height:48px;font-size:0.95rem;" onclick="window.submitPublicSetorHafalan()"><i class="ri-send-plane-fill"></i> Kirim Rekaman ke Ustaz</button>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:16px;height:48px;font-size:0.95rem;" onclick="window.submitPublicSetorHafalan()">
+          <i class="ri-send-plane-fill"></i> Kirim Rekaman ke Ustaz
+        </button>
       </div>
     `;
   }
@@ -1005,210 +1115,223 @@
   window.handleSetorDateChange = function(dVal) { state.setorSelectedDate = dVal; renderApp(); };
   window.handleSetorSurahChange = function(sNo) { state.setorSelectedSurah = Number(sNo); const sObj = getSurahByNo(sNo); state.setorAyatAwal = 1; state.setorAyatAkhir = sObj.ayat; renderApp(); };
 
-  window.startVoiceRecord = async function() {
+  function stopWaveformAndTimer() {
+    if (recTimerInterval) { clearInterval(recTimerInterval); recTimerInterval = null; }
+    if (waveAnimFrame) { cancelAnimationFrame(waveAnimFrame); waveAnimFrame = null; }
+    if (audioContext) {
+      try { audioContext.close(); } catch (e) {}
+      audioContext = null;
+      analyserNode = null;
+    }
+    if (micStream) {
+      micStream.getTracks().forEach(t => t.stop());
+      micStream = null;
+    }
+  }
+
+  function startLiveWaveform(stream) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunks = []; mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      audioContext = new AudioCtx();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyserNode = audioContext.createAnalyser();
+      analyserNode.fftSize = 64;
+      source.connect(analyserNode);
+
+      const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+      const barsContainer = document.getElementById("recWaveBars");
+      const bars = barsContainer ? Array.from(barsContainer.querySelectorAll(".rec-wave-bar")) : [];
+
+      const updateWave = () => {
+        if (!isRecordingAudio || !analyserNode) return;
+        analyserNode.getByteFrequencyData(dataArray);
+        bars.forEach((bar, i) => {
+          const val = dataArray[i % dataArray.length] || 0;
+          const h = Math.max(5, Math.min(26, Math.round((val / 255) * 26)));
+          bar.style.height = `${h}px`;
+        });
+        waveAnimFrame = requestAnimationFrame(updateWave);
+      };
+      updateWave();
+    } catch (e) {}
+  }
+
+  window.startVoiceRecord = async function() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return showToast("Browser ini tidak mendukung perekaman langsung. Silakan pilih file audio di bawah.", true);
+    }
+    try {
+      stopWaveformAndTimer();
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+      audioChunks = [];
+      const mimeType = getSupportedAudioMimeType();
+      mediaRecorder = mimeType ? new MediaRecorder(micStream, { mimeType }) : new MediaRecorder(micStream);
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) audioChunks.push(e.data);
+      };
+
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: "audio/webm" }); const reader = new FileReader();
+        isRecordingAudio = false;
+        const actualMime = mediaRecorder?.mimeType || mimeType || "audio/webm";
+        const blob = new Blob(audioChunks, { type: actualMime });
+        stopWaveformAndTimer();
+
+        if (blob.size === 0) {
+          showToast("Suara tidak terdeteksi, silakan coba rekam ulang.", true);
+          return;
+        }
+
+        if (recordedAudioBlobUrl) {
+          try { URL.revokeObjectURL(recordedAudioBlobUrl); } catch (e) {}
+        }
+        recordedAudioBlobUrl = URL.createObjectURL(blob);
+
+        const reader = new FileReader();
         reader.onloadend = () => {
           recordedBase64Audio = reader.result;
-          const wrap = document.getElementById("audioPreviewWrap"), player = document.getElementById("onlineAudioPlayer"), lbl = document.getElementById("recStatusLabel");
-          if (wrap && player) { wrap.style.display = "block"; player.src = recordedBase64Audio; }
-          if (lbl) lbl.textContent = "✓ Rekaman suara siap dikirim";
+          const box = document.getElementById("recorderBoxContainer");
+          const liveBanner = document.getElementById("recLiveBanner");
+          const wrap = document.getElementById("audioPreviewWrap");
+          const player = document.getElementById("onlineAudioPlayer");
+          const lbl = document.getElementById("recStatusLabel");
+          const btnStart = document.getElementById("btnStartRec");
+          const btnStop = document.getElementById("btnStopRec");
+
+          if (box) { box.classList.remove("is-recording"); box.classList.add("has-audio"); }
+          if (liveBanner) liveBanner.classList.remove("active");
+          if (btnStart) {
+            btnStart.style.display = "inline-flex";
+            btnStart.innerHTML = `<i class="ri-mic-fill"></i> Rekam Ulang Suara`;
+          }
+          if (btnStop) btnStop.style.display = "none";
+          if (lbl) lbl.textContent = `✓ Rekaman selesai (${formatRecTime(recSeconds)}). Silakan putar & dengarkan di bawah sebelum dikirim.`;
+          if (wrap) wrap.classList.add("show");
+          if (player) {
+            player.src = recordedAudioBlobUrl || recordedBase64Audio;
+            player.load();
+          }
+          showToast("Rekaman selesai! Silakan dengarkan preview suaranya.");
         };
-        reader.readAsDataURL(blob); stream.getTracks().forEach(t => t.stop());
+        reader.readAsDataURL(blob);
       };
-      mediaRecorder.start();
-      document.getElementById("btnStartRec").style.display = "none"; document.getElementById("btnStopRec").style.display = "inline-flex"; document.getElementById("recStatusLabel").textContent = "Sedang merekam suara...";
-      showToast("Perekaman suara dimulai...");
-    } catch (e) { showToast("Izin mikrofon tidak tersedia. Silakan unggah file audio.", true); }
-  };
-  window.stopVoiceRecord = function() {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-      document.getElementById("btnStartRec").style.display = "inline-flex"; document.getElementById("btnStopRec").style.display = "none";
-      showToast("Rekaman selesai.");
+
+      mediaRecorder.start(250);
+      isRecordingAudio = true;
+      recSeconds = 0;
+
+      const box = document.getElementById("recorderBoxContainer");
+      const liveBanner = document.getElementById("recLiveBanner");
+      const timerEl = document.getElementById("recTimerDisplay");
+      const btnStart = document.getElementById("btnStartRec");
+      const btnStop = document.getElementById("btnStopRec");
+      const lbl = document.getElementById("recStatusLabel");
+
+      if (box) { box.classList.remove("has-audio"); box.classList.add("is-recording"); }
+      if (liveBanner) liveBanner.classList.add("active");
+      if (timerEl) timerEl.textContent = "00:00";
+      if (btnStart) btnStart.style.display = "none";
+      if (btnStop) btnStop.style.display = "inline-flex";
+      if (lbl) lbl.textContent = "Sedang merekam... Klik 'Selesai & Preview Rekaman' jika sudah selesai membaca.";
+
+      recTimerInterval = setInterval(() => {
+        recSeconds++;
+        const tEl = document.getElementById("recTimerDisplay");
+        if (tEl) tEl.textContent = formatRecTime(recSeconds);
+      }, 1000);
+
+      startLiveWaveform(micStream);
+      showToast("Mikrofon aktif, silakan mulai membaca hafalan...");
+    } catch (e) {
+      stopWaveformAndTimer();
+      showToast("Izin mikrofon ditolak atau tidak tersedia di browser ini. Gunakan fitur unggah file audio di bawah.", true);
     }
   };
+
+  window.stopVoiceRecord = function() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (e) { stopWaveformAndTimer(); }
+    } else {
+      stopWaveformAndTimer();
+    }
+  };
+
+  window.playPreviewAudio = function() {
+    const player = document.getElementById("onlineAudioPlayer");
+    if (!player) return;
+    player.currentTime = 0;
+    player.play().catch(() => {
+      showToast("Klik tombol segitiga Play pada pemutar audio untuk mendengarkan.", false);
+    });
+  };
+
+  window.clearRecordedAudio = function() {
+    if (isRecordingAudio) window.stopVoiceRecord();
+    recordedBase64Audio = "";
+    if (recordedAudioBlobUrl) {
+      try { URL.revokeObjectURL(recordedAudioBlobUrl); } catch (e) {}
+      recordedAudioBlobUrl = "";
+    }
+    renderApp();
+    showToast("Rekaman dihapus. Silakan rekam ulang.");
+  };
+
   window.handleAudioUpload = function(ev) {
-    const file = ev.target.files?.[0]; if (!file) return; const reader = new FileReader();
-    reader.onload = () => { recordedBase64Audio = reader.result; document.getElementById("audioPreviewWrap").style.display = "block"; document.getElementById("onlineAudioPlayer").src = recordedBase64Audio; document.getElementById("recStatusLabel").textContent = "✓ File audio siap dikirim"; };
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    if (recordedAudioBlobUrl) {
+      try { URL.revokeObjectURL(recordedAudioBlobUrl); } catch (e) {}
+    }
+    recordedAudioBlobUrl = URL.createObjectURL(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      recordedBase64Audio = reader.result;
+      const box = document.getElementById("recorderBoxContainer");
+      const wrap = document.getElementById("audioPreviewWrap");
+      const player = document.getElementById("onlineAudioPlayer");
+      const lbl = document.getElementById("recStatusLabel");
+      if (box) box.classList.add("has-audio");
+      if (wrap) wrap.classList.add("show");
+      if (player) {
+        player.src = recordedAudioBlobUrl || recordedBase64Audio;
+        player.load();
+      }
+      if (lbl) lbl.textContent = `✓ File audio "${file.name}" siap didengarkan dan dikirim.`;
+      showToast("File audio dimuat! Anda bisa mendengarkannya terlebih dahulu.");
+    };
     reader.readAsDataURL(file);
   };
+
   window.submitPublicSetorHafalan = async function() {
     if (!state.setorSelectedUstazId || !state.setorSelectedPesertaId) return showToast("Pilih Ustaz dan Nama Pengirim!", true);
-    if (!recordedBase64Audio) return showToast("Silakan rekam suara atau unggah file!", true);
+    if (!recordedBase64Audio) return showToast("Silakan rekam suara atau unggah file terlebih dahulu!", true);
     const pObj = state.db.peserta.find(p => p.id === state.setorSelectedPesertaId);
     if (!pObj) return showToast("Peserta tidak ditemukan!", true);
     const surahObj = getSurahByNo(state.setorSelectedSurah);
-    const newEntry = {
-      id: "str-" + Date.now(), peserta_id: pObj.id, ruang_id: pObj.ruang_id, ustaz_id: state.setorSelectedUstazId,
+    const payload = {
+      peserta_id: pObj.id, ruang_id: pObj.ruang_id, ustaz_id: state.setorSelectedUstazId,
       tanggal_kegiatan: state.setorSelectedDate, hari_kegiatan: getIndonesianDayName(state.setorSelectedDate), metode: "Online",
       surah_no: surahObj.no, nama_surah: surahObj.nama, ayat_awal: state.setorAyatAwal, ayat_akhir: state.setorAyatAkhir,
       status_feedback: "Menunggu Evaluasi", kategori_feedback: [], catatan_manual: "Rekaman suara dari peserta.", audio_data: recordedBase64Audio
     };
-    if (!IS_PREVIEW && supabase) { await supabase.from("setoran").insert([newEntry]); await loadAllFromSupabase(); }
-    else { state.db.setoran.unshift(newEntry); savePreviewDB(); }
-    recordedBase64Audio = ""; showToast("Rekaman berhasil dikirim!"); state.activeMenu = "beranda"; renderApp();
-  };
-
-  function stripLeadingBasmalah(arabText, surahNo, ayahNo) {
-    if (!arabText) return "";
-    if (Number(ayahNo) !== 1 || Number(surahNo) === 1 || Number(surahNo) === 9) return arabText.trim();
-    let text = arabText.trim();
-    const words = text.split(/\s+/);
-    if (words.length > 4) {
-      const firstWords = words.slice(0, 4).join(" ");
-      if (firstWords.includes("بِسْمِ") || firstWords.includes("بسم")) {
-        return words.slice(4).join(" ").trim();
-      }
+    if (HAS_REAL_SUPABASE && supabase) {
+      const { error } = await supabase.from("setoran").insert([payload]);
+      if (error) return showToast("Gagal mengirim rekaman ke database: " + error.message, true);
+      await loadAllFromSupabase();
+    } else {
+      state.db.setoran.unshift({ id: "str-" + Date.now(), ...payload });
+      savePreviewDB();
     }
-    return text;
-  }
-
-  function highlightWaqafMarks(arabText, ayahNo) {
-    if (!arabText) return "";
-    let formatted = arabText.trim();
-    const waqafRules = [
-      { regex: /(\u06D8)(?=\s|$)/g, cls: "waqaf-mark waqaf-stop", title: "Waqaf Lazim (مـ): Harus berhenti" },
-      { regex: /(\u06D7)(?=\s|$)/g, cls: "waqaf-mark waqaf-stop", title: "Al-Waqfu Aula (قلى): Berhenti lebih utama" },
-      { regex: /(\u06DA)(?=\s|$)/g, cls: "waqaf-mark", title: "Waqaf Jaiz (ج): Boleh berhenti atau lanjut" },
-      { regex: /(\u06D6)(?=\s|$)/g, cls: "waqaf-mark", title: "Al-Waslu Aula (صلى): Melanjutkan bacaan lebih utama" },
-      { regex: /(\u06D9)(?=\s|$)/g, cls: "waqaf-mark waqaf-no", title: "La Waqfa Fih (لا): Jangan berhenti kecuali di akhir ayat" },
-      { regex: /(\u06DB)(?=\s|$)/g, cls: "waqaf-mark", title: "Waqaf Mu'anaqah (ۛ): Berhenti di salah satu tanda titik tiga" }
-    ];
-    for (const rule of waqafRules) {
-      formatted = formatted.replace(rule.regex, match => `<span class="${rule.cls}" title="${rule.title}">${match}</span>`);
+    recordedBase64Audio = "";
+    if (recordedAudioBlobUrl) {
+      try { URL.revokeObjectURL(recordedAudioBlobUrl); } catch (e) {}
+      recordedAudioBlobUrl = "";
     }
-    const arabicAyah = String(ayahNo).replace(/\d/g, d => ["٠","١","٢","٣","٤","٥","٦","٧","٨","٩"][Number(d)]);
-    return `${formatted}&nbsp;<span class="ayah-end-badge">﴿${arabicAyah}﴾</span>`;
-  }
-
-  function highlightTranslationSearch(text, query) {
-    if (!query || !text) return text;
-    const clean = query.trim(); if (!clean || /^[\d\-\s,]+$/.test(clean)) return text;
-    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return text.replace(new RegExp(`(${escaped})`, "gi"), `<mark class="search-highlight">$1</mark>`);
-  }
-
-  function renderMushafJuz30(container) {
-    document.getElementById("pageHeaderTitle").textContent = "Mushaf Al-Qur'an";
-    document.getElementById("pageHeaderSub").textContent = "Teks Arab Utsmani, Penanda Waqaf & Terjemahan";
-
-    const qSurah = (state.mushafSurahSearch || "").trim().toLowerCase();
-    const filteredSurahs = JUZ30_SURAHS.filter(s => !qSurah || s.nama.toLowerCase().includes(qSurah) || s.arti.toLowerCase().includes(qSurah) || String(s.no).includes(qSurah));
-    const activeSurah = getSurahByNo(state.selectedSurahMushaf);
-
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header" style="margin-bottom:12px;">
-          <div class="card-title"><i class="ri-book-read-line"></i> Navigasi & Pencarian</div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="window.toggleWaqafGuide()">
-            <i class="ri-information-line"></i> ${state.mushafShowWaqafGuide ? "Tutup Panduan" : "Panduan Waqaf"}
-          </button>
-        </div>
-        <div class="form-grid" style="margin-bottom:8px;">
-          <div class="form-group" style="margin-bottom:0;"><label>Cari Surah (78-114)</label><input type="text" class="form-control" placeholder="Cth: An-Naba..." value="${state.mushafSurahSearch}" oninput="window.handleMushafSurahSearch(this.value)" /></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Pilih Surah</label><select class="form-control" onchange="window.changeMushafSurah(this.value)">${filteredSurahs.map(s => `<option value="${s.no}" ${Number(s.no) === Number(activeSurah.no) ? 'selected' : ''}>${s.no}. QS. ${s.nama}</option>`).join("")}</select></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Cari Ayat / Terjemahan</label><input type="text" class="form-control" placeholder="Cth: 5, 1-10, nikmat..." value="${state.mushafAyatSearch}" oninput="window.handleMushafAyatSearch(this.value)" /></div>
-        </div>
-        <div class="surah-pill-bar">${filteredSurahs.map(s => `<button type="button" class="surah-pill ${Number(s.no) === Number(activeSurah.no) ? 'active' : ''}" onclick="window.changeMushafSurah(${s.no})">${s.no}. ${s.nama}</button>`).join("")}</div>
-        <div id="waqafGuidePanel" style="display:${state.mushafShowWaqafGuide ? 'block' : 'none'};margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;">
-          <h4 style="font-size:0.86rem;font-weight:800;color:var(--primary-dark);">Pedoman Tanda Berhenti (Waqaf)</h4>
-          <div class="waqaf-legend-grid">
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#b45309;">مـ / ۘ</div><div><strong>Waqaf Lazim</strong><br><span style="font-size:0.7rem;">Harus berhenti.</span></div></div>
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#b45309;">قلى / ۗ</div><div><strong>Al-Waqfu Aula</strong><br><span style="font-size:0.7rem;">Berhenti lebih utama.</span></div></div>
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box">ج / ۚ</div><div><strong>Waqaf Jaiz</strong><br><span style="font-size:0.7rem;">Boleh berhenti/lanjut.</span></div></div>
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box">صلى / ۖ</div><div><strong>Al-Waslu Aula</strong><br><span style="font-size:0.7rem;">Lanjut lebih utama.</span></div></div>
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#dc2626;">لا / ۙ</div><div><strong>La Waqfa Fih</strong><br><span style="font-size:0.7rem;">Jangan berhenti.</span></div></div>
-            <div class="waqaf-legend-item"><div class="waqaf-symbol-box">∴ / ۛ</div><div><strong>Mu'anaqah</strong><br><span style="font-size:0.7rem;">Berhenti di salah satu.</span></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="hero-banner" style="text-align:center;">
-        <span class="hero-badge">Surah ke-${activeSurah.no} • ${activeSurah.ayat} Ayat</span>
-        <h3>QS. ${activeSurah.nama} (${activeSurah.arti})</h3>
-      </div>
-      <div id="mushafAyahContainer"></div>
-    `;
-    loadAndDisplayMushafAyahs(activeSurah.no);
-  }
-
-  window.toggleWaqafGuide = function() { state.mushafShowWaqafGuide = !state.mushafShowWaqafGuide; renderApp(); };
-  window.handleMushafSurahSearch = function(val) { state.mushafSurahSearch = val; renderApp(); };
-  window.changeMushafSurah = function(surahNo) { state.selectedSurahMushaf = Number(surahNo); renderApp(); };
-  window.handleMushafAyatSearch = function(val) { state.mushafAyatSearch = val; renderFilteredMushafAyahList(state.selectedSurahMushaf); };
-
-  async function loadAndDisplayMushafAyahs(surahNo) {
-    const box = document.getElementById("mushafAyahContainer"); if (!box) return;
-    if (state.mushafCache[surahNo]) return renderFilteredMushafAyahList(surahNo);
-    box.innerHTML = `<div class="glass-card" style="text-align:center;padding:30px;"><p style="font-weight:700;color:var(--primary-dark);">Memuat teks Mushaf Standar Indonesia & Terjemahan Kemenag RI...</p></div>`;
-
-    try {
-      const resEq = await fetch(`https://equran.id/api/v2/surat/${surahNo}`);
-      const jEq = await resEq.json();
-      if (jEq?.data?.ayat && Array.isArray(jEq.data.ayat) && jEq.data.ayat.length > 0) {
-        state.mushafCache[surahNo] = jEq.data.ayat.map(a => ({
-          no: a.nomorAyat,
-          arab: stripLeadingBasmalah(a.teksArab, surahNo, a.nomorAyat),
-          id: a.teksIndonesia || ""
-        }));
-        return renderFilteredMushafAyahList(surahNo);
-      }
-      throw new Error("Fallback to AlQuran Cloud");
-    } catch (e1) {
-      try {
-        const [resAr, resId] = await Promise.all([
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/quran-uthmani`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/id.indonesian`)
-        ]);
-        const jAr = await resAr.json(); const jId = await resId.json();
-        if (jAr?.data?.ayahs && jId?.data?.ayahs) {
-          state.mushafCache[surahNo] = jAr.data.ayahs.map((a, idx) => ({
-            no: a.numberInSurah,
-            arab: stripLeadingBasmalah(a.text, surahNo, a.numberInSurah),
-            id: jId.data.ayahs[idx]?.text || ""
-          }));
-          return renderFilteredMushafAyahList(surahNo);
-        }
-      } catch (e2) {}
-      box.innerHTML = `<div class="glass-card" style="text-align:center;"><p style="color:var(--danger);font-weight:700;">Gagal memuat jaringan mushaf. Periksa koneksi internet Anda.</p></div>`;
-    }
-  }
-
-  function renderFilteredMushafAyahList(surahNo) {
-    const box = document.getElementById("mushafAyahContainer"); if (!box) return;
-    const list = state.mushafCache[surahNo] || []; const q = (state.mushafAyatSearch || "").trim();
-    let filtered = list;
-    if (q) {
-      const rangeMatch = q.match(/^(\d+)\s*-\s*(\d+)$/);
-      if (rangeMatch) filtered = list.filter(a => a.no >= Number(rangeMatch[1]) && a.no <= Number(rangeMatch[2]));
-      else if (/^\d+$/.test(q)) filtered = list.filter(a => a.no === Number(q));
-      else { const lower = q.toLowerCase(); filtered = list.filter(a => (a.id || "").toLowerCase().includes(lower) || String(a.no) === lower); }
-    }
-    if (filtered.length === 0) { box.innerHTML = `<div class="glass-card" style="text-align:center;"><p style="color:var(--text-muted);font-weight:600;">Pencarian tidak ditemukan.</p></div>`; return; }
-    
-    const showBasmalah = !q && Number(surahNo) !== 1 && Number(surahNo) !== 9;
-    const basmalahHTML = showBasmalah ? `
-      <div class="basmalah-card">
-        <div class="basmalah-arabic">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
-        <div class="basmalah-latin">Dengan nama Allah Yang Maha Pengasih, Maha Penyayang</div>
-      </div>
-    ` : "";
-
-    box.innerHTML = basmalahHTML + filtered.map(a => `
-      <div class="glass-card" style="padding:22px;margin-bottom:14px;">
-        <span class="badge badge-lulus" style="margin-bottom:12px;">Ayat ${a.no}</span>
-        <div class="font-arabic" style="text-align:right;margin-bottom:14px;line-height:2.35;">${highlightWaqafMarks(a.arab, a.no)}</div>
-        <p style="font-size:0.9rem;color:#334155;line-height:1.6;border-top:1px solid #f1f5f9;padding-top:12px;">${highlightTranslationSearch(a.id, q)}</p>
-      </div>
-    `).join("");
-  }
-
-  window.toggleRegisterUstaz = function(showReg) {
-    state.showRegisterUstaz = Boolean(showReg);
+    showToast("Rekaman berhasil dikirim ke Ustaz!");
+    state.activeMenu = "beranda";
     renderApp();
   };
 
@@ -1255,10 +1378,10 @@
         <div class="glass-card" style="max-width:500px;margin:0 auto;">
           <div class="card-header">
             <div class="card-title"><i class="ri-user-star-line"></i> Login Ustaz / Ustazah</div>
-            ${IS_PREVIEW ? `<span class="badge badge-lulus">Demo: ahmad / 123</span>` : ''}
+            ${!HAS_REAL_SUPABASE ? `<span class="badge badge-lulus">Demo: ahmad / 123</span>` : ''}
           </div>
-          <div class="form-group"><label>Username (Atau Email Admin)</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." value="${IS_PREVIEW ? 'ahmad' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
-          <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." value="${IS_PREVIEW ? '123' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group"><label>Username Ustaz / Ustazah</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username (bukan email)..." value="${!HAS_REAL_SUPABASE ? 'ahmad' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." value="${!HAS_REAL_SUPABASE ? '123' : ''}" onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard</button>
           <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">
             <span style="font-size:0.84rem;color:var(--text-muted);display:block;margin-bottom:8px;">Belum punya akun Ustaz / Ustazah?</span>
@@ -1279,11 +1402,11 @@
       <div class="glass-card" style="max-width:500px;margin:0 auto;background:rgba(241, 245, 249, 0.6);border-color:#e2e8f0;">
         <div class="card-header">
           <div class="card-title" style="color:#334155;"><i class="ri-shield-keyhole-line"></i> Login Administrator</div>
-          ${!HAS_REAL_SUPABASE ? `<span class="badge badge-menunggu">Demo: admin@murajaahku.com</span>` : ''}
+          ${!HAS_REAL_SUPABASE ? `<span class="badge badge-menunggu">Demo: admin@murajaahku.com</span>` : `<span class="badge badge-lulus">Supabase Auth Aktif</span>`}
         </div>
-        <div class="form-group"><label>Email Admin</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." value="${!HAS_REAL_SUPABASE ? 'admin@murajaahku.com' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <div class="form-group"><label>Email Admin (Yang Dibuat di Menu Authentication Supabase)</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." value="${!HAS_REAL_SUPABASE ? 'admin@murajaahku.com' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
         <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." value="${!HAS_REAL_SUPABASE ? 'admin123' : ''}" onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
-        <button type="button" class="btn btn-outline" style="width:100%;margin-top:12px;color:#475569;border-color:#cbd5e1;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
+        <button type="button" class="btn btn-outline" style="width:100%;margin-top:12px;color:#0f172a;border-color:#94a3b8;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
       </div>
     `;
   }
@@ -1295,8 +1418,8 @@
     const pass = (document.getElementById("regPass")?.value || "").trim();
     if (!nama || !userRaw || !pass) return showToast("Harap lengkapi semua kolom pendaftaran!", true);
 
-    if (userRaw.includes("@")) {
-      return showToast("Ditolak! Username Ustaz tidak boleh menggunakan format Email (@).", true);
+    if (userRaw.includes("@") || userRaw.toLowerCase() === "admin") {
+      return showToast("Ditolak! Username Ustaz tidak boleh menggunakan email (@) atau kata 'admin'.", true);
     }
 
     const normalizedUser = userRaw.toLowerCase();
@@ -1315,7 +1438,7 @@
         return showToast(`Ditolak! Username "${userRaw}" sudah digunakan, pilih username lain.`, true);
       }
       const { error } = await supabase.from("ustaz").insert([{ nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" }]);
-      if (error) return showToast("Pendaftaran ditolak karena username sudah digunakan!", true);
+      if (error) return showToast("Pendaftaran gagal: " + error.message, true);
       await loadAllFromSupabase();
     } else {
       state.db.ustaz.push(newU);
@@ -1331,23 +1454,27 @@
     const password = (document.getElementById("loginUstazPass")?.value || "").trim();
     if (!username || !password) return showToast("Isi username dan password Ustaz!", true);
 
-    // Tolak tegas jika Admin mencoba login di halaman Ustaz (menggunakan email atau username 'admin')
+    // Tolak tegas jika Admin mencoba login di halaman Ustaz
     if (username.includes("@") || username.toLowerCase() === "admin") {
-      return showToast("Akses Ditolak! Akun Admin dilarang masuk melalui jalur Login Ustaz. Klik tombol Admin di kanan atas.", true);
+      return showToast("Akses Ditolak! Email/Admin hanya boleh masuk melalui tombol 'Admin' di pojok kanan atas.", true);
     }
 
     const normUser = username.toLowerCase();
 
     if (HAS_REAL_SUPABASE && supabase) {
       const { data: listUstaz, error } = await supabase.from("ustaz").select("*");
-      if (!error && Array.isArray(listUstaz)) {
+      if (error) {
+        return showToast("Gagal membaca tabel ustaz di Supabase. Pastikan SQL sudah dijalankan!", true);
+      }
+      if (Array.isArray(listUstaz)) {
         state.db.ustaz = listUstaz;
       }
       const found = (state.db.ustaz || []).find(
         u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
       );
-      if (!found) return showToast("Username atau password Ustaz salah / akun tidak terdaftar!", true);
+      if (!found) return showToast("Username atau password Ustaz salah / belum terdaftar!", true);
       state.currentUser = found;
+      await loadAllFromSupabase();
     } else {
       const found = (state.db.ustaz || []).find(
         u => (u.username || "").trim().toLowerCase() === normUser && String(u.password || "").trim() === password
@@ -1380,85 +1507,50 @@
     }
 
     if (HAS_REAL_SUPABASE && supabase) {
-      // Pastikan email yang didaftarkan di Supabase Auth sudah terkonfirmasi otomatis via RPC jika fungsi tersedia
+      // 1. Konfirmasi otomatis email di auth.users agar tidak pernah tertahan "Email not confirmed"
       try { await supabase.rpc("confirm_admin_email", { target_email: normInput }); } catch (e) {}
 
+      // 2. Coba login standar via Supabase Auth GoTrue
       const { data, error } = await supabase.auth.signInWithPassword({ email: normInput, password });
-      if (error || !data?.user) {
-        return showToast("Login Admin gagal: " + (error?.message || "Email atau password tidak sesuai di Supabase Auth"), true);
-      }
-      state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
-      await loadAllFromSupabase();
-    } else {
-      // Mode Preview / Demo
-      state.currentUser = { email: normInput, nama_lengkap: "Administrator" };
-    }
-
-    state.role = "admin";
-    state.activeMenu = "admin_overview";
-    showToast("Berhasil masuk Dashboard Admin");
-    renderApp();
-  };
-
-  window.handleUstazLogin = async function() {
-    const username = (document.getElementById("loginUstazUser")?.value || "").trim();
-    const password = (document.getElementById("loginUstazPass")?.value || "").trim();
-    if (!username || !password) return showToast("Isi username dan password!", true);
-
-    // Deteksi Otomatis: Jika pengguna mengetikkan alamat Email (@) di form Ustaz, arahkan ke proses Login Admin
-    if (username.includes("@")) {
-      return await executeAdminAuth(username, password);
-    }
-
-    const lowerUser = username.toLowerCase();
-
-    if (!IS_PREVIEW && supabase) {
-      const { data, error } = await supabase.from("ustaz").select("*");
-      if (error) return showToast("Gagal terhubung ke tabel Ustaz di Supabase!", true);
-      const matched = (data || []).find(u => (u.username || "").trim().toLowerCase() === lowerUser && String(u.password) === String(password));
-      if (!matched) return showToast("Username atau password Ustaz salah!", true);
-      state.currentUser = matched;
-      await loadAllFromSupabase();
-    } else {
-      const found = state.db.ustaz.find(u => (u.username || "").trim().toLowerCase() === lowerUser && String(u.password) === String(password));
-      if (!found) return showToast("Username atau password salah!", true);
-      state.currentUser = found;
-    }
-    state.role = "ustaz"; state.ustazActiveRoomId = null; state.ustazSelectedPesertaId = ""; state.activeMenu = "ustaz_ringkasan";
-    showToast(`Selamat datang, ${state.currentUser.nama_lengkap}`); renderApp();
-  };
-
-  async function executeAdminAuth(email, password) {
-    if (!IS_PREVIEW && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.message && error.message.toLowerCase().includes("email not confirmed")) {
-          return showToast("Email Admin belum dikonfirmasi! Jalankan perintah UPDATE auth.users di SQL Editor Supabase.", true);
-        }
-        return showToast(`Login Admin gagal: ${error.message}`, true);
-      }
-      if (data?.user) {
+      if (!error && data?.user) {
         state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
         await loadAllFromSupabase();
-        state.role = "admin"; state.activeMenu = "admin_overview";
+        state.role = "admin";
+        state.activeMenu = "admin_overview";
         showToast("Berhasil masuk Dashboard Admin");
         renderApp();
         return;
       }
+
+      // 3. Fallback Verifikasi Langsung ke tabel auth.users di PostgreSQL (jika Email Provider di Supabase Auth belum di-enable)
+      try {
+        const { data: rpcVerified, error: rpcErr } = await supabase.rpc("verify_admin_credentials", {
+          target_email: normInput,
+          target_password: password
+        });
+        if (!rpcErr && rpcVerified === true) {
+          state.currentUser = { email: normInput, nama_lengkap: "Administrator" };
+          await loadAllFromSupabase();
+          state.role = "admin";
+          state.activeMenu = "admin_overview";
+          showToast("Berhasil masuk Dashboard Admin");
+          renderApp();
+          return;
+        }
+      } catch (e2) {}
+
+      return showToast(
+        "Login Admin gagal: Pastikan Email & Password sesuai dengan yang Anda buat di menu Authentication -> Users Supabase.",
+        true
+      );
     } else {
-      // Mode Preview / Demo
-      state.currentUser = { email, nama_lengkap: "Administrator" };
-      state.role = "admin"; state.activeMenu = "admin_overview";
-      showToast("Berhasil masuk Admin (Mode Preview)");
+      // Jika SUPABASE_URL belum diganti (masih mode Preview)
+      state.currentUser = { email: normInput, nama_lengkap: "Administrator" };
+      state.role = "admin";
+      state.activeMenu = "admin_overview";
+      showToast("Berhasil masuk Dashboard Admin");
       renderApp();
     }
-  }
-
-  window.handleAdminLogin = async function() {
-    const email = (document.getElementById("loginAdminEmail")?.value || "").trim();
-    const password = (document.getElementById("loginAdminPass")?.value || "").trim();
-    if (!email || !password) return showToast("Isi email dan password Admin!", true);
-    await executeAdminAuth(email, password);
   };
 
   let ustazSelectedCategories = []; let ustazSelectedStatus = "Lulus";
@@ -1658,10 +1750,10 @@
     const tgl = state.selectedDate; const existingIdx = state.db.kehadiran.findIndex(k => k.peserta_id === pid && k.tanggal_kegiatan === tgl);
     if (existingIdx >= 0) {
       state.db.kehadiran[existingIdx].status_kehadiran = status;
-      if(!IS_PREVIEW && supabase) await supabase.from("kehadiran").update({status_kehadiran: status}).eq("id", state.db.kehadiran[existingIdx].id);
+      if(HAS_REAL_SUPABASE && supabase) await supabase.from("kehadiran").update({status_kehadiran: status}).eq("id", state.db.kehadiran[existingIdx].id);
     } else {
       const nK = { id: "khd-" + Date.now(), peserta_id: pid, ruang_id: state.ustazActiveRoomId, tanggal_kegiatan: tgl, hari_kegiatan: getIndonesianDayName(tgl), status_kehadiran: status, keterangan: "" };
-      if(!IS_PREVIEW && supabase) { await supabase.from("kehadiran").insert([nK]); await loadAllFromSupabase(); } else state.db.kehadiran.unshift(nK);
+      if(HAS_REAL_SUPABASE && supabase) { await supabase.from("kehadiran").insert([{ peserta_id: pid, ruang_id: state.ustazActiveRoomId, tanggal_kegiatan: tgl, hari_kegiatan: getIndonesianDayName(tgl), status_kehadiran: status, keterangan: "" }]); await loadAllFromSupabase(); } else state.db.kehadiran.unshift(nK);
     }
     savePreviewDB(); showToast(`Kehadiran ${status} disimpan`); renderApp();
   };
@@ -1686,10 +1778,10 @@
 
     if (existingIdx >= 0) {
       const oldId = state.db.setoran[existingIdx].id; state.db.setoran[existingIdx] = { id: oldId, ...record };
-      if(!IS_PREVIEW && supabase) await supabase.from("setoran").update(record).eq("id", oldId);
+      if(HAS_REAL_SUPABASE && supabase) await supabase.from("setoran").update(record).eq("id", oldId);
     } else {
       const nObj = { id: "str-" + Date.now(), ...record };
-      if(!IS_PREVIEW && supabase) await supabase.from("setoran").insert([record]); else state.db.setoran.unshift(nObj);
+      if(HAS_REAL_SUPABASE && supabase) { await supabase.from("setoran").insert([record]); await loadAllFromSupabase(); } else state.db.setoran.unshift(nObj);
     }
 
     const pObj = state.db.peserta.find(p => p.id === pid);
@@ -1700,7 +1792,7 @@
         pObj.target_ayat_awal = Number(document.getElementById("nextTargetAwal").value);
         pObj.target_ayat_akhir = Number(document.getElementById("nextTargetAkhir").value);
       }
-      if(!IS_PREVIEW && supabase) await supabase.from("peserta").update({target_surah: pObj.target_surah, target_ayat_awal: pObj.target_ayat_awal, target_ayat_akhir: pObj.target_ayat_akhir, ayat_lulus_json: pObj.ayat_lulus_json, total_ayat_lulus: pObj.total_ayat_lulus}).eq("id", pObj.id);
+      if(HAS_REAL_SUPABASE && supabase) await supabase.from("peserta").update({target_surah: pObj.target_surah, target_ayat_awal: pObj.target_ayat_awal, target_ayat_akhir: pObj.target_ayat_akhir, ayat_lulus_json: pObj.ayat_lulus_json, total_ayat_lulus: pObj.total_ayat_lulus}).eq("id", pObj.id);
     }
     state.ustazForceReplaceMode = false; savePreviewDB(); showToast("Evaluasi disimpan!"); renderApp();
   };
@@ -1763,7 +1855,7 @@
     const s = state.db.setoran.find(x => x.id === sid);
     s.status_feedback = document.getElementById("modalAudioStatus").value; s.kategori_feedback = [...modalEvalCats]; s.catatan_manual = document.getElementById("modalAudioCatatan").value;
     recomputePesertaProgressFromSetoran(s.peserta_id);
-    if(!IS_PREVIEW && supabase) await supabase.from("setoran").update({status_feedback: s.status_feedback, kategori_feedback: s.kategori_feedback, catatan_manual: s.catatan_manual}).eq("id", s.id);
+    if(HAS_REAL_SUPABASE && supabase) await supabase.from("setoran").update({status_feedback: s.status_feedback, kategori_feedback: s.kategori_feedback, catatan_manual: s.catatan_manual}).eq("id", s.id);
     savePreviewDB(); window.closeModal(); showToast("Evaluasi audio disimpan!"); renderApp();
   };
 
@@ -1780,8 +1872,8 @@
     const nama = document.getElementById("nRName").value.trim(); const kode = document.getElementById("nRCode").value.trim().toUpperCase();
     if(!nama || !kode) return showToast("Nama dan kode wajib diisi!", true);
     if (state.db.ruang_belajar.some(r => (r.kode_ruang || "").toUpperCase() === kode)) return showToast("Kode sudah dipakai!", true);
-    const nR = { id: "rng-" + Date.now(), ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
-    if(!IS_PREVIEW && supabase) { await supabase.from("ruang_belajar").insert([nR]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push(nR);
+    const payload = { ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
+    if(HAS_REAL_SUPABASE && supabase) { await supabase.from("ruang_belajar").insert([payload]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push({ id: "rng-" + Date.now(), ...payload });
     savePreviewDB(); window.closeModal(); showToast("Ruang dibuat!"); renderApp();
   };
 
@@ -1799,9 +1891,54 @@
   };
   window.saveNewPeserta = async function(roomId) {
     const nama = document.getElementById("nPName").value.trim(); if(!nama) return showToast("Nama wajib diisi!", true);
-    const nP = { id: "pst-" + Date.now(), ruang_id: roomId, nama_peserta: nama, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
-    if(!IS_PREVIEW && supabase) { await supabase.from("peserta").insert([nP]); await loadAllFromSupabase(); } else state.db.peserta.push(nP);
-    state.ustazSelectedPesertaId = nP.id; savePreviewDB(); window.closeModal(); showToast(`${nama} didaftarkan!`); renderApp();
+    const payload = { ruang_id: roomId, nama_peserta: nama, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
+    if(HAS_REAL_SUPABASE && supabase) {
+      const { data } = await supabase.from("peserta").insert([payload]).select().single();
+      await loadAllFromSupabase();
+      if (data?.id) state.ustazSelectedPesertaId = data.id;
+    } else {
+      const nP = { id: "pst-" + Date.now(), ...payload };
+      state.db.peserta.push(nP);
+      state.ustazSelectedPesertaId = nP.id;
+    }
+    savePreviewDB(); window.closeModal(); showToast(`${nama} didaftarkan!`); renderApp();
+  };
+
+  window.openAddRoomModal = function() {
+    openModal(`
+      <div class="card-header"><div class="card-title">Buat Ruang Baru</div></div>
+    if (!nama || !kode) return showToast("Nama dan kode wajib diisi!", true);
+    if (state.db.ruang_belajar.some(r => (r.kode_ruang || "").toUpperCase() === kode)) return showToast("Kode sudah dipakai!", true);
+    const payload = { ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
+    if(HAS_REAL_SUPABASE && supabase) { await supabase.from("ruang_belajar").insert([payload]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push({ id: "rng-" + Date.now(), ...payload });
+    savePreviewDB(); window.closeModal(); showToast("Ruang dibuat!"); renderApp();
+  };
+
+  window.openAddPesertaModal = function(roomId) {
+    openModal(`
+      <div class="card-header"><div class="card-title">Tambah Nama Terdaftar</div></div>
+      <div class="form-group"><label>Nama Lengkap</label><input type="text" id="nPName" class="form-control" /></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Mulai QS.</label><select id="nPSurah" class="form-control">${JUZ30_SURAHS.map(s=>`<option value="${s.no}">${s.no}. QS. ${s.nama}</option>`).join("")}</select></div>
+        <div class="form-group"><label>Ayat Awal</label><input type="number" id="nPAwal" class="form-control" value="1" min="1" /></div>
+        <div class="form-group"><label>Ayat Akhir</label><input type="number" id="nPAkhir" class="form-control" value="10" min="1" /></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button class="btn btn-soft" onclick="window.closeModal()">Batal</button><button class="btn btn-primary" onclick="window.saveNewPeserta('${roomId}')">Daftarkan</button></div>
+    `);
+  };
+  window.saveNewPeserta = async function(roomId) {
+    const nama = document.getElementById("nPName").value.trim(); if(!nama) return showToast("Nama wajib diisi!", true);
+    const payload = { ruang_id: roomId, nama_peserta: nama, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
+    if(HAS_REAL_SUPABASE && supabase) {
+      const { data } = await supabase.from("peserta").insert([payload]).select().single();
+      await loadAllFromSupabase();
+      if (data?.id) state.ustazSelectedPesertaId = data.id;
+    } else {
+      const nP = { id: "pst-" + Date.now(), ...payload };
+      state.db.peserta.push(nP);
+      state.ustazSelectedPesertaId = nP.id;
+    }
+    savePreviewDB(); window.closeModal(); showToast(`${nama} didaftarkan!`); renderApp();
   };
 
   function renderAdminOverview(container) {
@@ -1949,7 +2086,7 @@
       no_hp: ""
     };
 
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       const { data: exist } = await supabase.from("ustaz").select("id, username");
       if (Array.isArray(exist) && exist.some(u => (u.username || "").trim().toLowerCase() === normalizedUser)) {
         return showToast(`Ditolak! Username "${userRaw}" sudah digunakan.`, true);
@@ -1981,7 +2118,7 @@
     state.db.setoran = state.db.setoran.filter(s => s.ustaz_id !== id && !roomIds.includes(s.ruang_id));
     state.db.kehadiran = state.db.kehadiran.filter(k => !roomIds.includes(k.ruang_id));
 
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       await supabase.from("ustaz").delete().eq("id", id);
       await loadAllFromSupabase();
     } else {
@@ -2073,7 +2210,7 @@
   window.adminDeleteRoom = async function(id) {
     state.db.ruang_belajar = state.db.ruang_belajar.filter(r=>r.id!==id);
     state.db.peserta = state.db.peserta.filter(p=>p.ruang_id!==id);
-    if(!IS_PREVIEW && supabase) await supabase.from("ruang_belajar").delete().eq("id",id);
+    if(HAS_REAL_SUPABASE && supabase) await supabase.from("ruang_belajar").delete().eq("id",id);
     savePreviewDB();
     showToast("Ruang berhasil dihapus");
     renderApp();
@@ -2084,7 +2221,7 @@
     state.db.peserta = state.db.peserta.filter(x => x.id !== pesertaId);
     state.db.setoran = state.db.setoran.filter(s => s.peserta_id !== pesertaId);
     state.db.kehadiran = state.db.kehadiran.filter(k => k.peserta_id !== pesertaId);
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       await supabase.from("peserta").delete().eq("id", pesertaId);
     }
     savePreviewDB();
@@ -2201,7 +2338,7 @@
       tanggal: today
     };
 
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       await supabase.from("materi").insert([{
         judul: newMateri.judul,
         deskripsi: newMateri.deskripsi,
@@ -2224,7 +2361,7 @@
 
   window.adminDeleteMateri = async function(id) {
     state.db.materi = (state.db.materi || []).filter(m => m.id !== id);
-    if (!IS_PREVIEW && supabase) {
+    if (HAS_REAL_SUPABASE && supabase) {
       await supabase.from("materi").delete().eq("id", id);
     }
     savePreviewDB();
@@ -2237,46 +2374,320 @@
     document.getElementById("pageHeaderSub").textContent = "Histori aktivitas setoran";
     container.innerHTML = `<div class="glass-card"><div class="card-header"><div class="card-title">Histori Setoran (${state.db.setoran.length})</div></div>${state.db.setoran.map(s => `<div class="list-row"><div class="row-left"><div class="avatar-circle"><i class="ri-file-line"></i></div><div class="row-info"><h4>QS. ${s.nama_surah} (${s.status_feedback})</h4><p>${s.tanggal_kegiatan}</p></div></div><div class="row-right"><button class="btn btn-danger btn-sm" onclick="window.adminDeleteSetoran('${s.id}')">Hapus</button></div></div>`).join("")}</div>`;
   }
-  window.adminDeleteSetoran = async function(id) { const tgt = state.db.setoran.find(s=>s.id===id); state.db.setoran = state.db.setoran.filter(s=>s.id!==id); if(tgt) recomputePesertaProgressFromSetoran(tgt.peserta_id); if(!IS_PREVIEW && supabase) await supabase.from("setoran").delete().eq("id",id); savePreviewDB(); renderApp(); };
+  window.adminDeleteSetoran = async function(id) { const tgt = state.db.setoran.find(s=>s.id===id); state.db.setoran = state.db.setoran.filter(s=>s.id!==id); if(tgt) recomputePesertaProgressFromSetoran(tgt.peserta_id); if(HAS_REAL_SUPABASE && supabase) await supabase.from("setoran").delete().eq("id",id); savePreviewDB(); renderApp(); };
+
+  function toArabicNumber(num) {
+    const map = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+    return String(num).split("").map(c => map[Number(c)] ?? c).join("");
+  }
+
+  function stripLeadingBasmalah(arabText, surahNo, nomorAyat) {
+    if (!arabText || Number(nomorAyat) !== 1 || Number(surahNo) === 1 || Number(surahNo) === 9) {
+      return (arabText || "").trim();
+    }
+    let text = arabText.trim();
+    if (text.includes("\n")) {
+      const parts = text.split("\n").map(s => s.trim()).filter(Boolean);
+      if (parts.length > 1) return parts.slice(1).join(" ").trim();
+    }
+    const basmalahPatterns = [
+      /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u,
+      /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/u,
+      /^بِسْمِ\s+اللّٰهِ\s+الرَّحْمٰنِ\s+الرَّحِيْمِ\s*/u,
+      /^بِسْمِ\s+ٱللّٰهِ\s+ٱلرَّحْمٰنِ\s+ٱلرَّحِيْمِ\s*/u
+    ];
+    for (const pat of basmalahPatterns) {
+      if (pat.test(text)) {
+        const cleaned = text.replace(pat, "").trim();
+        if (cleaned.length > 0) return cleaned;
+      }
+    }
+    const words = text.split(/\s+/);
+    if (words.length > 4) {
+      const firstWordNorm = words[0].replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/gu, "");
+      const fourthWordNorm = words[3].replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/gu, "");
+      if (firstWordNorm.includes("بسم") && (fourthWordNorm.includes("الرحيم") || fourthWordNorm.includes("ٱلرحيم"))) {
+        return words.slice(4).join(" ").trim();
+      }
+    }
+    return text;
+  }
+
+  function formatArabicWithWaqaf(arabicText, nomorAyat) {
+    if (!arabicText) return "";
+    const waqafMap = {
+      "\u06D6": { title: "Waqaf Shala (صلى): Lebih utama disambung (washal), boleh berhenti", cls: "" },
+      "\u06D7": { title: "Waqaf Qala (قلى): Lebih utama berhenti (waqaf)", cls: "waqaf-stop" },
+      "\u06D8": { title: "Waqaf Lazim (مـ): Harus berhenti", cls: "waqaf-stop" },
+      "\u06D9": { title: "Waqaf Laa (لا): Jangan berhenti kecuali di akhir ayat", cls: "waqaf-no" },
+      "\u06DA": { title: "Waqaf Jaiz (ج): Boleh berhenti atau disambung", cls: "" },
+      "\u06DB": { title: "Waqaf Mu'anaqah (ۛ): Berhenti pada salah satu tanda titik tiga saja", cls: "waqaf-stop" }
+    };
+
+    const cleaned = arabicText.replace(/\r?\n/g, " ").trim();
+    const regex = /(\s*[\u06D6-\u06DB])/gu;
+    const formatted = cleaned.replace(regex, (match) => {
+      const ch = match.trim();
+      const info = waqafMap[ch];
+      if (!info) return match;
+      return `<span class="waqaf-mark ${info.cls}" title="${info.title}">${match}</span>`;
+    });
+
+    return `${formatted} <span class="ayah-end-badge" title="Akhir Ayat ${nomorAyat}">﴿${toArabicNumber(nomorAyat)}﴾</span>`;
+  }
+
+  function highlightTranslationText(text, query) {
+    if (!query || !text) return text;
+    const q = query.trim();
+    if (!q || /^\d+(-\d+)?$/.test(q)) return text;
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return text.replace(new RegExp(`(${escaped})`, "gi"), `<mark class="search-highlight">$1</mark>`);
+  }
+
+  async function renderMushafJuz30(container) {
+    document.getElementById("pageHeaderTitle").textContent = "Mushaf Al-Qur'an Juz 30";
+    document.getElementById("pageHeaderSub").textContent = "Teks Standar Indonesia, Tanda Waqaf & Terjemahan Kemenag RI";
+
+    const currentSurahNo = Number(state.selectedSurahMushaf) || 78;
+    const surahMeta = getSurahByNo(currentSurahNo);
+
+    const surahQuery = (state.mushafSurahSearch || "").trim().toLowerCase();
+    const filteredSurahs = JUZ30_SURAHS.filter(s =>
+      !surahQuery ||
+      s.nama.toLowerCase().includes(surahQuery) ||
+      s.arti.toLowerCase().includes(surahQuery) ||
+      String(s.no).includes(surahQuery)
+    );
+
+    container.innerHTML = `
+      <div class="modern-workspace-card">
+        <div class="card-header" style="margin-bottom:10px;">
+          <div class="card-title"><i class="ri-book-open-line"></i> Navigasi & Pencarian Surah / Ayat</div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.toggleWaqafGuide()">
+            <i class="ri-information-line"></i> ${state.mushafShowWaqafGuide ? "Tutup Panduan Waqaf" : "Panduan Tanda Waqaf"}
+          </button>
+        </div>
+
+        ${state.mushafShowWaqafGuide ? `
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:14px;margin-bottom:14px;">
+            <h4 style="font-size:0.86rem;font-weight:800;color:var(--primary-dark);">Pedoman Tanda Berhenti (Waqaf) Mushaf Al-Qur'an</h4>
+            <div class="waqaf-legend-grid">
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#b45309;">مـ</div><div><strong style="font-size:0.78rem;">Waqaf Lazim (مـ)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Wajib berhenti</p></div></div>
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#b45309;">قلى</div><div><strong style="font-size:0.78rem;">Waqaf Aula (قلى)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Lebih utama berhenti</p></div></div>
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box">ج</div><div><strong style="font-size:0.78rem;">Waqaf Jaiz (ج)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Boleh berhenti / lanjut</p></div></div>
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box">صلى</div><div><strong style="font-size:0.78rem;">Washal Aula (صلى)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Lebih utama lanjut</p></div></div>
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#dc2626;">لا</div><div><strong style="font-size:0.78rem;">Waqaf Laa (لا)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Jangan berhenti (kecuali akhir ayat)</p></div></div>
+              <div class="waqaf-legend-item"><div class="waqaf-symbol-box" style="color:#b45309;">ۛ ۛ</div><div><strong style="font-size:0.78rem;">Mu'anaqah (∴ ∴)</strong><p style="font-size:0.72rem;color:var(--text-muted);">Berhenti di salah satu titik tiga</p></div></div>
+            </div>
+          </div>
+        ` : ""}
+
+        <div class="form-grid" style="margin-bottom:8px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>1. Pilih Surah Juz 30</label>
+            <select class="form-control" onchange="window.selectMushafSurah(this.value)">
+              ${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === currentSurahNo ? "selected" : ""}>${s.no}. QS. ${s.nama} (${s.arti}) — ${s.ayat} Ayat</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>2. Cari Nama / Nomor Surah</label>
+            <input type="text" class="form-control" placeholder="Ketik nama surah (misal: Mulk, Naba, 112)..." value="${state.mushafSurahSearch || ""}" oninput="window.handleMushafSurahSearch(this.value)" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>3. Cari Nomor Ayat / Kata Terjemahan</label>
+            <input type="text" class="form-control" placeholder="Contoh: 5 atau 1-10 atau kata terjemahan..." value="${state.mushafAyatSearch || ""}" oninput="window.handleMushafAyatSearch(this.value)" />
+          </div>
+        </div>
+
+        <div class="surah-pill-bar">
+          ${filteredSurahs.map(s => `
+            <button type="button" class="surah-pill ${Number(s.no) === currentSurahNo ? "active" : ""}" onclick="window.selectMushafSurah(${s.no})">
+              ${s.no}. ${s.nama}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="basmalah-card">
+        <div style="font-size:0.78rem;font-weight:800;color:var(--primary-dark);margin-bottom:4px;">
+          QS. ${surahMeta.nama.toUpperCase()} (${surahMeta.arti}) • SURAH KE-${surahMeta.no} • ${surahMeta.ayat} AYAT
+        </div>
+        <div class="basmalah-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+        <div class="basmalah-latin">Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.</div>
+      </div>
+
+      <div class="glass-card" id="mushafAyahContainer">
+        <div style="text-align:center;padding:28px;color:var(--text-muted);">
+          <i class="ri-loader-4-line" style="font-size:1.8rem;color:var(--primary-dark);"></i>
+          <p style="margin-top:8px;font-weight:700;">Memuat teks Mushaf & terjemahan QS. ${surahMeta.nama}...</p>
+        </div>
+      </div>
+    `;
+
+    await loadAndRenderMushafAyahs(currentSurahNo);
+  }
+
+  async function fetchSurahData(surahNo) {
+    if (state.mushafCache[surahNo]) return state.mushafCache[surahNo];
+
+    try {
+      const resEq = await fetch(`https://equran.id/api/v2/surat/${surahNo}`);
+      if (resEq.ok) {
+        const jsonEq = await resEq.json();
+        if (jsonEq?.data?.ayat && Array.isArray(jsonEq.data.ayat)) {
+          const mapped = jsonEq.data.ayat.map(item => ({
+            no: Number(item.nomorAyat),
+            arab: stripLeadingBasmalah(item.teksArab, surahNo, item.nomorAyat),
+            terjemahan: item.teksIndonesia
+          }));
+          state.mushafCache[surahNo] = mapped;
+          return mapped;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const resCloud = await fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/editions/quran-uthmani,id.indonesian`);
+      if (resCloud.ok) {
+        const jsonCloud = await resCloud.json();
+        const arabEdition = jsonCloud?.data?.[0]?.ayahs || [];
+        const indoEdition = jsonCloud?.data?.[1]?.ayahs || [];
+        if (arabEdition.length > 0) {
+          const mapped = arabEdition.map((a, idx) => ({
+            no: Number(a.numberInSurah),
+            arab: stripLeadingBasmalah(a.text, surahNo, a.numberInSurah),
+            terjemahan: indoEdition[idx]?.text || ""
+          }));
+          state.mushafCache[surahNo] = mapped;
+          return mapped;
+        }
+      }
+    } catch (e) {}
+
+    return [];
+  }
+
+  async function loadAndRenderMushafAyahs(surahNo) {
+    const box = document.getElementById("mushafAyahContainer");
+    if (!box) return;
+
+    const ayahs = await fetchSurahData(surahNo);
+    if (!ayahs || ayahs.length === 0) {
+      box.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);font-weight:700;">Gagal memuat teks surah. Pastikan koneksi internet aktif.</div>`;
+      return;
+    }
+
+    const q = (state.mushafAyatSearch || "").trim();
+    let filtered = ayahs;
+
+    if (q) {
+      const rangeMatch = q.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        filtered = ayahs.filter(a => a.no >= Math.min(start, end) && a.no <= Math.max(start, end));
+      } else if (/^\d+$/.test(q)) {
+        const targetNo = Number(q);
+        filtered = ayahs.filter(a => a.no === targetNo);
+      } else {
+        const lower = q.toLowerCase();
+        filtered = ayahs.filter(a => (a.terjemahan || "").toLowerCase().includes(lower) || String(a.no).includes(lower));
+      }
+    }
+
+    if (filtered.length === 0) {
+      box.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-weight:700;">Tidak ditemukan ayat yang cocok dengan pencarian "${q}".</div>`;
+      return;
+    }
+
+    box.innerHTML = filtered.map(a => `
+      <div style="padding:18px 14px;border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span class="badge badge-lulus">Ayat ${a.no}</span>
+        </div>
+        <div class="font-arabic" style="text-align:right;margin-bottom:12px;">
+          ${formatArabicWithWaqaf(a.arab, a.no)}
+        </div>
+        <p style="font-size:0.88rem;color:#334155;line-height:1.6;">
+          ${highlightTranslationText(a.terjemahan, q)}
+        </p>
+      </div>
+    `).join("");
+  }
+
+  window.selectMushafSurah = function(no) {
+    state.selectedSurahMushaf = Number(no);
+    renderApp();
+  };
+  window.toggleWaqafGuide = function() {
+    state.mushafShowWaqafGuide = !state.mushafShowWaqafGuide;
+    renderApp();
+  };
+  window.handleMushafSurahSearch = function(val) {
+    state.mushafSurahSearch = val;
+    renderApp();
+  };
+  window.handleMushafAyatSearch = function(val) {
+    state.mushafAyatSearch = val;
+    loadAndRenderMushafAyahs(state.selectedSurahMushaf);
+  };
+  window.toggleRegisterUstaz = function(show) {
+    state.showRegisterUstaz = Boolean(show);
+    renderApp();
+  };
 
   function renderApp() {
-    if (state.role === "ustaz") {
-      const stillExists = state.currentUser && (state.db.ustaz || []).some(
-        u => u.id === state.currentUser.id && (u.username || "").toLowerCase() === (state.currentUser.username || "").toLowerCase()
-      );
+    if (state.role === "ustaz" && state.currentUser?.id) {
+      const stillExists = (state.db.ustaz || []).some(u => u.id === state.currentUser.id);
       if (!stillExists) {
         state.role = "public";
         state.currentUser = null;
-        state.ustazActiveRoomId = null;
-        state.ustazSelectedPesertaId = "";
-        state.activeMenu = "login";
-        showToast("Akses ditolak: Akun Ustaz/Ustazah sudah dihapus oleh Admin!", true);
+        state.activeMenu = "beranda";
+        showToast("Sesi berakhir: Akun Ustaz telah dihapus oleh Admin.", true);
       }
     }
 
     renderNavigation();
     const container = document.getElementById("mainViewContainer");
-    switch (state.activeMenu) {
-      case "beranda": renderPublicBeranda(container); break;
-      case "input_kode_ruang": renderPublicInputKode(container); break;
-      case "ruang_publik": renderPublicRoomView(container); break;
-      case "setor_hafalan": renderPublicSetorHafalan(container); break;
-      case "materi_publik": renderPublicMateri(container); break;
-      case "mushaf": renderMushafJuz30(container); break;
-      case "login": renderLoginPortal(container); break;
-      case "login_admin": renderLoginAdmin(container); break;
-      case "ustaz_ringkasan": renderUstazRingkasan(container); break;
-      case "ustaz_setoran_audio": renderUstazSetoranAudio(container); break;
-      case "admin_overview": renderAdminOverview(container); break;
-      case "admin_ustaz": renderAdminUstaz(container); break;
-      case "admin_ruang": renderAdminRuangPeserta(container); break;
-      case "admin_materi": renderAdminMateri(container); break;
-      case "admin_log": renderAdminLogData(container); break;
-      default: renderPublicBeranda(container);
+    if (!container) return;
+
+    const menu = state.activeMenu;
+
+    if (menu === "mushaf") {
+      renderMushafJuz30(container);
+      return;
+    }
+
+    if (state.role === "public") {
+      if (menu === "beranda") renderPublicBeranda(container);
+      else if (menu === "input_kode_ruang") renderPublicInputKode(container);
+      else if (menu === "ruang_publik") renderPublicRoomView(container);
+      else if (menu === "setor_hafalan") renderPublicSetorHafalan(container);
+      else if (menu === "materi_publik") renderPublicMateri(container);
+      else if (menu === "login") renderLoginPortal(container);
+      else if (menu === "login_admin") renderLoginAdmin(container);
+      else renderPublicBeranda(container);
+      return;
+    }
+
+    if (state.role === "ustaz") {
+      if (menu === "ustaz_ringkasan") renderUstazRingkasan(container);
+      else if (menu === "ustaz_setoran_audio") renderUstazSetoranAudio(container);
+      else renderUstazRingkasan(container);
+      return;
+    }
+
+    if (state.role === "admin") {
+      if (menu === "admin_overview") renderAdminOverview(container);
+      else if (menu === "admin_ustaz") renderAdminUstaz(container);
+      else if (menu === "admin_ruang") renderAdminRuangPeserta(container);
+      else if (menu === "admin_materi") renderAdminMateri(container);
+      else if (menu === "admin_log") renderAdminLogData(container);
+      else renderAdminOverview(container);
     }
   }
 
-  (async function initMurajaahku() {
+  (async function initMurajaahkuApp() {
     await autoSetupDatabase();
     renderApp();
   })();
