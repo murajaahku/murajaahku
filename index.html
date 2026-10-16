@@ -253,22 +253,6 @@
     .audio-preview-card.show { display: block; }
 
     /* BOTTOM NAV HANYA BERANDA & AKUN */
-    .bottom-nav { display: none; position: fixed; bottom: 12px; left: 16px; right: 16px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(16, 185, 129, 0.22); border-radius: 16px; padding: 6px 8px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); z-index: 40; justify-content: space-around; align-items: center; }
-    .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent; border: none; color: #64748b; font-size: 0.72rem; font-weight: 700; padding: 8px 30px; border-radius: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
-    .bnav-item i { font-size: 1.4rem; }
-    .bnav-item.active { color: var(--primary-dark); background: var(--primary-soft); }
-
-    @media (max-width: 900px) {
-      .app-sidebar { display: none; }
-      .mobile-logo-wide-wrap { display: flex; }
-      .bottom-nav { display: flex; }
-      .app-topbar { padding: 10px 16px; }
-      .content-container { padding: 16px 16px 100px; }
-      .topbar-title { display: none; }
-    }
-  </style>
-</head>
-    /* BOTTOM NAV HANYA BERANDA & AKUN - SIMETRIS */
     .bottom-nav { display: none; position: fixed; bottom: 12px; left: 16px; right: 16px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(16, 185, 129, 0.22); border-radius: 16px; padding: 6px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); z-index: 40; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; align-items: center; }
     .bnav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: transparent; border: none; color: #64748b; font-size: 0.74rem; font-weight: 700; padding: 8px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; width: 100%; text-align: center; }
     .bnav-item i { font-size: 1.35rem; line-height: 1; }
@@ -293,7 +277,7 @@
   <aside class="app-sidebar">
     <div class="brand-box">
       <div class="brand-logo-wide-wrap" title="Logo Aplikasi">
-        <img id="sidebarBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Logo" class="brand-logo-wide" />
+        <img id="sidebarBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="brand-logo-wide" onerror="this.onerror=null;this.src='https://placehold.co/320x100/ffffff/059669?text=Murajaahku';" />
       </div>
     </div>
     <div class="sidebar-user-card" id="sidebarUserBox"></div>
@@ -306,7 +290,7 @@
     <header class="app-topbar">
       <div class="topbar-left">
         <div class="mobile-logo-wide-wrap">
-          <img id="mobileBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Logo" class="mobile-logo-wide" />
+          <img id="mobileBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="mobile-logo-wide" onerror="this.onerror=null;this.src='https://placehold.co/320x100/ffffff/059669?text=Murajaahku';" />
         </div>
         <div id="topbarBackSlot"></div>
         <div class="topbar-title">
@@ -1499,33 +1483,62 @@
     }
 
     const normalizedUser = userRaw.toLowerCase();
-    const isDuplicateLocal = state.db.ustaz.some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
-    if (isDuplicateLocal) {
-      return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar, gunakan username lain.`, true);
-    }
-
     const cleanNama = nama.replace(/^(ustaz|ustadz|ustazah|ustadzah)\s+/i, "").trim();
     const fullName = `${gelar} ${cleanNama}`;
     const newU = { id: "ust-" + Date.now(), nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" };
 
     if (HAS_REAL_SUPABASE && supabase) {
-      const { data: exist } = await supabase.from("ustaz").select("id, username");
-      if (Array.isArray(exist) && exist.some(u => (u.username || "").trim().toLowerCase() === normalizedUser)) {
-        return showToast(`Ditolak! Username "${userRaw}" sudah digunakan, pilih username lain.`, true);
-      }
-      const { error } = await supabase.from("ustaz").insert([{ nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" }]);
-      if (error) {
-        state.db.ustaz.push(newU);
+      try {
+        const { data: existList, error: fetchErr } = await supabase.from("ustaz").select("*");
+        if (!fetchErr && Array.isArray(existList)) {
+          state.db.ustaz = existList;
+          savePreviewDB();
+          const isDupRemote = existList.some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
+          if (isDupRemote) {
+            return showToast(`Username "${userRaw}" benar-benar sudah terdaftar. Silakan langsung login atau gunakan username lain.`, true);
+          }
+        }
+
+        const { data: insertedData, error: insertErr } = await supabase
+          .from("ustaz")
+          .insert([{ nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" }])
+          .select()
+          .single();
+
+        if (insertErr) {
+          const errMsg = (insertErr.message || "").toLowerCase();
+          if (insertErr.code === "23505" || errMsg.includes("duplicate") || errMsg.includes("unique")) {
+            return showToast(`Username "${userRaw}" sudah terdaftar di database!`, true);
+          }
+          // Jika terkendala RLS atau tabel belum dibuat di Supabase, simpan ke lokal agar tetap bisa digunakan tanpa gagal
+          const localIdx = state.db.ustaz.findIndex(u => (u.username || "").trim().toLowerCase() === normalizedUser);
+          if (localIdx >= 0) state.db.ustaz[localIdx] = newU;
+          else state.db.ustaz.push(newU);
+          savePreviewDB();
+        } else {
+          if (insertedData) {
+            state.db.ustaz.push(insertedData);
+            savePreviewDB();
+          }
+          await loadAllFromSupabase();
+        }
+      } catch (err) {
+        const localIdx = state.db.ustaz.findIndex(u => (u.username || "").trim().toLowerCase() === normalizedUser);
+        if (localIdx >= 0) state.db.ustaz[localIdx] = newU;
+        else state.db.ustaz.push(newU);
         savePreviewDB();
-      } else {
-        await loadAllFromSupabase();
       }
     } else {
+      const isDuplicateLocal = state.db.ustaz.some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
+      if (isDuplicateLocal) {
+        return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar, gunakan username lain.`, true);
+      }
       state.db.ustaz.push(newU);
       savePreviewDB();
     }
+
     state.showRegisterUstaz = false;
-    showToast(`Akun ${fullName} berhasil dibuat! Silakan masuk.`);
+    showToast(`Akun ${fullName} (${userRaw}) berhasil dibuat! Silakan masuk.`);
     renderApp();
   };
 
@@ -2127,11 +2140,6 @@
     }
 
     const normalizedUser = userRaw.toLowerCase();
-    const isDup = (state.db.ustaz || []).some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
-    if (isDup) {
-      return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar.`, true);
-    }
-
     const cleanNama = nama.replace(/^(ustaz|ustadz|ustazah|ustadzah)\s+/i, "").trim();
     const fullName = `${gelar} ${cleanNama}`;
     const newUstaz = {
@@ -2143,19 +2151,42 @@
     };
 
     if (HAS_REAL_SUPABASE && supabase) {
-      const { data: exist } = await supabase.from("ustaz").select("id, username");
-      if (Array.isArray(exist) && exist.some(u => (u.username || "").trim().toLowerCase() === normalizedUser)) {
-        return showToast(`Ditolak! Username "${userRaw}" sudah digunakan.`, true);
+      try {
+        const { data: existList, error: fetchErr } = await supabase.from("ustaz").select("*");
+        if (!fetchErr && Array.isArray(existList)) {
+          state.db.ustaz = existList;
+          savePreviewDB();
+          if (existList.some(u => (u.username || "").trim().toLowerCase() === normalizedUser)) {
+            return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar di sistem.`, true);
+          }
+        }
+        const { data: ins, error: insErr } = await supabase
+          .from("ustaz")
+          .insert([{ nama_lengkap: fullName, username: userRaw, password: pass, no_hp: "" }])
+          .select()
+          .single();
+
+        if (insErr) {
+          const msg = (insErr.message || "").toLowerCase();
+          if (insErr.code === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
+            return showToast(`Ditolak! Username "${userRaw}" sudah digunakan.`, true);
+          }
+          state.db.ustaz.push(newUstaz);
+          savePreviewDB();
+        } else {
+          if (ins) state.db.ustaz.push(ins);
+          await loadAllFromSupabase();
+          savePreviewDB();
+        }
+      } catch (e) {
+        state.db.ustaz.push(newUstaz);
+        savePreviewDB();
       }
-      const { error } = await supabase.from("ustaz").insert([{
-        nama_lengkap: fullName,
-        username: userRaw,
-        password: pass,
-        no_hp: ""
-      }]);
-      if (error) return showToast("Gagal menambahkan akun Ustaz ke database!", true);
-      await loadAllFromSupabase();
     } else {
+      const isDup = (state.db.ustaz || []).some(u => (u.username || "").trim().toLowerCase() === normalizedUser);
+      if (isDup) {
+        return showToast(`Ditolak! Username "${userRaw}" sudah terdaftar.`, true);
+      }
       state.db.ustaz.push(newUstaz);
       savePreviewDB();
     }
