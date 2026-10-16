@@ -64,7 +64,7 @@
     .brand-logo-wide-wrap {
       background: #ffffff; border-radius: 14px; padding: 8px 12px;
       display: flex; align-items: center; justify-content: center;
-      height: 86px; width: 100%; box-shadow: none !important; border: none !important; overflow: hidden;
+      height: 86px; width: 100%; box-shadow: none !important; border: none !important; overflow: hidden; cursor: pointer;
     }
     .brand-logo-wide { width: 100%; height: 100%; object-fit: contain; display: block; }
 
@@ -86,7 +86,7 @@
     .app-topbar { position: sticky; top: 0; z-index: 15; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 70px; }
     
     .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .mobile-logo-wide-wrap { display: none; background: #ffffff; border-radius: 12px; padding: 4px 10px; height: 60px; width: 196px; flex-shrink: 0; align-items: center; justify-content: center; box-shadow: none !important; border: none !important; overflow: hidden; }
+    .mobile-logo-wide-wrap { display: none; background: #ffffff; border-radius: 12px; padding: 4px 10px; height: 60px; width: 196px; flex-shrink: 0; align-items: center; justify-content: center; box-shadow: none !important; border: none !important; overflow: hidden; cursor: pointer; }
     .mobile-logo-wide { width: 100%; height: 100%; object-fit: contain; display: block; }
     .topbar-title h2 { font-size: 0.98rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-title p { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -146,6 +146,7 @@
     .badge-izin { background: #e0f2fe; color: #075985; }
     .badge-sakit { background: #fef9c3; color: #854d0e; }
     .badge-alpa { background: #fee2e2; color: #991b1b; }
+    .badge-kode { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
 
     .modern-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
     .status-choice-card { border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 10px 12px; background: #ffffff; cursor: pointer; transition: all 0.18s ease; display: flex; align-items: center; gap: 10px; text-align: left; font-family: inherit; }
@@ -168,6 +169,12 @@
     .form-control { width: 100%; height: 42px; padding: 8px 12px; border-radius: var(--radius-sm); border: 1.5px solid #cbd5e1; background: #ffffff; font-family: inherit; font-size: 0.86rem; color: var(--text-main); transition: all 0.2s ease; outline: none; }
     .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
 
+    /* PASSWORD VISIBILITY WRAPPER */
+    .password-field-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+    .password-field-wrap .form-control { padding-right: 42px; }
+    .pw-eye-btn { position: absolute; right: 6px; width: 32px; height: 32px; border: none; background: transparent; color: #64748b; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.15s; }
+    .pw-eye-btn:hover { background: #f1f5f9; color: var(--primary-dark); }
+
     .chip-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
     .chip-btn { padding: 6px 14px; border-radius: 99px; border: 1.5px solid #cbd5e1; background: #ffffff; font-size: 0.78rem; font-weight: 700; color: #475569; cursor: pointer; transition: all 0.15s ease; font-family: inherit; height: 34px; display: inline-flex; align-items: center; }
     .chip-btn.selected { background: var(--primary); border-color: var(--primary); color: #ffffff; }
@@ -189,45 +196,14 @@
     .toast-box { position: fixed; top: 16px; right: 16px; z-index: 99; background: #065f46; color: #ffffff; padding: 12px 18px; border-radius: 10px; font-size: 0.86rem; font-weight: 700; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16); display: flex; align-items: center; gap: 8px; transform: translateY(-140%); transition: transform 0.28s ease; max-width: 92vw; }
     .toast-box.show { transform: translateY(0); }
 
-    /* MUSHAF WAQAF & BASMALAH STYLES (NATURAL ARABIC UNICODE SHAPING) */
-    .waqaf-mark {
-      color: #059669;
-      font-weight: 700;
-      cursor: help;
-    }
+    /* MUSHAF WAQAF & BASMALAH STYLES */
+    .waqaf-mark { color: #059669; font-weight: 700; cursor: help; }
     .waqaf-mark.waqaf-stop { color: #b45309; }
     .waqaf-mark.waqaf-no { color: #dc2626; }
-    .ayah-end-badge {
-      display: inline;
-      font-family: 'Amiri', serif;
-      color: #047857;
-      font-weight: 700;
-      margin-right: 6px;
-      font-size: 0.95em;
-      white-space: nowrap;
-    }
-    .basmalah-card {
-      background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
-      border: 1.5px solid #a7f3d0;
-      border-radius: var(--radius-md);
-      padding: 18px 20px;
-      text-align: center;
-      margin-bottom: 14px;
-      box-shadow: var(--shadow-sm);
-    }
-    .basmalah-arabic {
-      font-family: 'Amiri', serif;
-      font-size: 1.85rem;
-      color: #065f46;
-      line-height: 2;
-      direction: rtl;
-    }
-    .basmalah-latin {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-      font-weight: 600;
-    }
+    .ayah-end-badge { display: inline; font-family: 'Amiri', serif; color: #047857; font-weight: 700; margin-right: 6px; font-size: 0.95em; white-space: nowrap; }
+    .basmalah-card { background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%); border: 1.5px solid #a7f3d0; border-radius: var(--radius-md); padding: 18px 20px; text-align: center; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+    .basmalah-arabic { font-family: 'Amiri', serif; font-size: 1.85rem; color: #065f46; line-height: 2; direction: rtl; }
+    .basmalah-latin { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
     .waqaf-legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
     .waqaf-legend-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 11px; display: flex; align-items: center; gap: 10px; }
     .waqaf-symbol-box { min-width: 38px; height: 38px; border-radius: 8px; background: var(--primary-soft); color: var(--primary-dark); font-family: 'Amiri', serif; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid #a7f3d0; }
@@ -252,7 +228,7 @@
     .audio-preview-card { display: none; background: #ffffff; border: 1.5px solid #a7f3d0; border-radius: 14px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow-sm); }
     .audio-preview-card.show { display: block; }
 
-    /* BOTTOM NAV HANYA BERANDA & AKUN */
+    /* BOTTOM NAV */
     .bottom-nav { display: none; position: fixed; bottom: 12px; left: 16px; right: 16px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(16, 185, 129, 0.22); border-radius: 16px; padding: 6px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); z-index: 40; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; align-items: center; }
     .bnav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: transparent; border: none; color: #64748b; font-size: 0.74rem; font-weight: 700; padding: 8px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; width: 100%; text-align: center; }
     .bnav-item i { font-size: 1.35rem; line-height: 1; }
@@ -276,8 +252,8 @@
   <!-- LEFT SIDEBAR (DESKTOP) -->
   <aside class="app-sidebar">
     <div class="brand-box">
-      <div class="brand-logo-wide-wrap" title="Logo Aplikasi">
-        <img id="sidebarBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="brand-logo-wide" onerror="this.onerror=null;this.src='https://placehold.co/320x100/ffffff/059669?text=Murajaahku';" />
+      <div class="brand-logo-wide-wrap" title="Logo Aplikasi" onclick="window.switchMenu('beranda')">
+        <img id="sidebarBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="brand-logo-wide" onerror="window.handleBrandLogoError(this)" />
       </div>
     </div>
     <div class="sidebar-user-card" id="sidebarUserBox"></div>
@@ -289,8 +265,8 @@
   <main class="app-main">
     <header class="app-topbar">
       <div class="topbar-left">
-        <div class="mobile-logo-wide-wrap">
-          <img id="mobileBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="mobile-logo-wide" onerror="this.onerror=null;this.src='https://placehold.co/320x100/ffffff/059669?text=Murajaahku';" />
+        <div class="mobile-logo-wide-wrap" onclick="window.switchMenu('beranda')">
+          <img id="mobileBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murajaahku" class="mobile-logo-wide" onerror="window.handleBrandLogoError(this)" />
         </div>
         <div id="topbarBackSlot"></div>
         <div class="topbar-title">
@@ -323,11 +299,51 @@
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
   // ============================================================================
-  // KONFIGURASI KONEKSI SUPABASE (Hanya diatur dari dalam kode agar aman)
+  // KONFIGURASI KONEKSI SUPABASE
   // ============================================================================
   const SUPABASE_URL = "https://panpejzadufainlnoocw.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_2cQGA-G-t_GO3MOsfSMdIg_TOvYlBfh";
-  const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/d6lp3yfavfkvuiqjvlxi";
+  const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut";
+
+  const FALLBACK_LOGO_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 90">
+      <rect width="320" height="90" rx="14" fill="#ffffff"/>
+      <circle cx="46" cy="45" r="24" fill="#059669"/>
+      <path d="M35 45 L43 53 L58 36" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="84" y="53" font-family="Plus Jakarta Sans, sans-serif" font-size="27" font-weight="800" fill="#059669">Murajaahku</text>
+    </svg>
+  `);
+
+  window.handleBrandLogoError = function(imgEl) {
+    if (!imgEl) return;
+    const savedLocal = localStorage.getItem("murajaahku_custom_logo_v2");
+    if (savedLocal && imgEl.src !== savedLocal && !savedLocal.includes("d6lp3yfavfkvuiqjvlxi")) {
+      imgEl.src = savedLocal;
+      return;
+    }
+    if (imgEl.src !== DEFAULT_LOGO_URL) {
+      imgEl.src = DEFAULT_LOGO_URL;
+      return;
+    }
+    imgEl.onerror = null;
+    imgEl.src = FALLBACK_LOGO_SVG;
+  };
+
+  window.togglePasswordVisibility = function(inputId, btnEl) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const isPassword = inp.type === "password";
+    inp.type = isPassword ? "text" : "password";
+    if (btnEl) {
+      btnEl.innerHTML = isPassword ? '<i class="ri-eye-off-line"></i>' : '<i class="ri-eye-line"></i>';
+    }
+  };
+
+  function generatePersonalCode(name = "PST") {
+    const prefix = String(name).replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 3) || "PST";
+    const num = Math.floor(100 + Math.random() * 900);
+    return `${prefix}-${num}`;
+  }
 
   function normalizeSupabaseUrl(rawUrl) {
     let u = (rawUrl || "").trim();
@@ -424,19 +440,19 @@
     role: "public",
     currentUser: null,
     activeMenu: "beranda",
-    
     showRegisterUstaz: false,
-    
     unlockedRoom: null,
     publicSelectedDate: new Date().toISOString().split("T")[0],
     publicSelectedPesertaId: "ALL",
-    
     ustazActiveRoomId: null,
     ustazSelectedPesertaId: "",
     ustazForceReplaceMode: false,
     selectedDate: new Date().toISOString().split("T")[0],
-    
-    appLogoUrl: localStorage.getItem("murajaahku_custom_logo_v2") || DEFAULT_LOGO_URL,
+    appLogoUrl: (() => {
+      const saved = localStorage.getItem("murajaahku_custom_logo_v2");
+      if (saved && !saved.includes("d6lp3yfavfkvuiqjvlxi")) return saved;
+      return DEFAULT_LOGO_URL;
+    })(),
     feedbackCategories: (() => {
       try {
         const raw = localStorage.getItem("murajaahku_feedback_cats_v2");
@@ -444,20 +460,18 @@
         return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_FEEDBACK_CATEGORIES];
       } catch (e) { return [...DEFAULT_FEEDBACK_CATEGORIES]; }
     })(),
-    
     setorSelectedUstazId: "",
     setorSelectedPesertaId: "",
+    setorKodePribadiInput: "",
     setorSelectedDate: new Date().toISOString().split("T")[0],
     setorSelectedSurah: 78,
     setorAyatAwal: 1,
     setorAyatAkhir: 10,
-    
     selectedSurahMushaf: 78,
     mushafSurahSearch: "",
     mushafAyatSearch: "",
     mushafShowWaqafGuide: false,
     mushafCache: {},
-    
     db: { ustaz: [], ruang_belajar: [], peserta: [], setoran: [], kehadiran: [], materi: [] }
   };
 
@@ -474,20 +488,48 @@
     if (!Array.isArray(cats) || cats.length === 0) return "";
     return `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-        ${cats.map(c => `<span class="badge" style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;font-size:0.75rem;padding:4px 10px;">${c}</span>`).join("")}
+        ${cats.map(c => `<span class="badge" style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;font-size:0.75rem;padding:4px 10px;">${String(c).replace(/^#+/, "")}</span>`).join("")}
       </div>
     `;
   }
 
   function applyAppLogo() {
-    let savedLogo = state.appLogoUrl || DEFAULT_LOGO_URL;
-    if (!savedLogo || savedLogo === "undefined" || savedLogo === "null") {
+    let savedLogo = state.appLogoUrl || localStorage.getItem("murajaahku_custom_logo_v2") || DEFAULT_LOGO_URL;
+    if (!savedLogo || savedLogo === "undefined" || savedLogo === "null" || savedLogo.includes("d6lp3yfavfkvuiqjvlxi")) {
       savedLogo = DEFAULT_LOGO_URL;
     }
     const sLogo = document.getElementById("sidebarBrandLogo");
     const mLogo = document.getElementById("mobileBrandLogo");
     if (sLogo) sLogo.src = savedLogo;
     if (mLogo) mLogo.src = savedLogo;
+  }
+
+  async function compressImageForPermanentStorage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxW = 480;
+          const maxH = 160;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+          if (h > maxH) { w = Math.round((w * maxH) / h); h = maxH; }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.88));
+        };
+        img.onerror = () => resolve(ev.target.result);
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   function getIndonesianDayName(dateString) {
@@ -524,30 +566,54 @@
     return { uniqueList: combined, total: combined.length };
   }
 
-  function getActiveSurahProgressInfo(peserta, specificSetoran = null) {
-    let surahNo = specificSetoran ? specificSetoran.surah_no : peserta?.target_surah;
+  // Menghitung progres peserta terhadap TOTAL JUMLAH AYAT SURAH yang dibaca (misal An-Naba' .../40) dan terupdate per pergantian tanggal
+  function getActiveSurahProgressInfo(peserta, specificSetoran = null, upToDate = null) {
+    const approvedSetoran = (state.db.setoran || []).filter(s => {
+      if (s.peserta_id !== peserta?.id) return false;
+      if (s.status_feedback === "Menunggu Evaluasi") return false;
+      if (upToDate && s.tanggal_kegiatan && s.tanggal_kegiatan > upToDate) return false;
+      return true;
+    });
+
+    let surahNo = specificSetoran ? specificSetoran.surah_no : null;
+    if (!surahNo && approvedSetoran.length > 0) {
+      const sorted = [...approvedSetoran].sort((a, b) => String(b.tanggal_kegiatan).localeCompare(String(a.tanggal_kegiatan)));
+      surahNo = sorted[0].surah_no;
+    }
     if (!surahNo) {
-      const lastSetoran = state.db.setoran.find(s => s.peserta_id === peserta?.id);
-      surahNo = lastSetoran ? lastSetoran.surah_no : 78;
+      surahNo = peserta?.target_surah || 78;
     }
+
     const surahObj = getSurahByNo(surahNo);
-    
-    const targetAwal = specificSetoran ? specificSetoran.ayat_awal : (peserta?.target_ayat_awal || 1);
-    const targetAkhir = specificSetoran ? specificSetoran.ayat_akhir : (peserta?.target_ayat_akhir || surahObj.ayat);
-    const totalAyatTarget = Math.max(1, (targetAkhir - targetAwal + 1));
-    
-    const lulusArr = Array.isArray(peserta?.ayat_lulus_json) ? peserta.ayat_lulus_json : [];
-    let lulusInTargetCount = 0;
-    for(let a=targetAwal; a<=targetAkhir; a++) {
-      if(lulusArr.includes(`${surahNo}:${a}`)) lulusInTargetCount++;
+    const totalAyatSurah = surahObj.ayat; // Selalu total ayat utuh dari surah yang dibaca (contoh: An-Naba' = 40)
+
+    const coveredVerses = new Set();
+    approvedSetoran.forEach(s => {
+      if (Number(s.surah_no) === Number(surahObj.no) && (s.status_feedback === "Lulus" || s.status_feedback === "Perlu perbaikan")) {
+        const start = Math.max(1, Number(s.ayat_awal || 1));
+        const end = Math.min(totalAyatSurah, Math.max(start, Number(s.ayat_akhir || start)));
+        for (let a = start; a <= end; a++) coveredVerses.add(a);
+      }
+    });
+
+    // Jika ada ayat_lulus_json bawaan dan tidak sedang difilter tanggal masa lalu
+    if (!upToDate && Array.isArray(peserta?.ayat_lulus_json)) {
+      peserta.ayat_lulus_json.forEach(token => {
+        const [sNum, aNum] = String(token).split(":").map(Number);
+        if (sNum === Number(surahObj.no) && aNum >= 1 && aNum <= totalAyatSurah) {
+          coveredVerses.add(aNum);
+        }
+      });
     }
-    const persen = Math.min(100, Math.round((lulusInTargetCount / totalAyatTarget) * 100));
-    
+
+    const lulusCount = Math.min(totalAyatSurah, coveredVerses.size);
+    const persen = Math.min(100, Math.round((lulusCount / totalAyatSurah) * 100));
+
     return {
       surahNo: surahObj.no,
       namaSurah: surahObj.nama,
-      lulusCount: lulusInTargetCount,
-      totalAyatTarget,
+      lulusCount,
+      totalAyatTarget: totalAyatSurah,
       persen
     };
   }
@@ -572,6 +638,23 @@
   }
   window.closeModal = function() { document.getElementById("globalModal").classList.remove("show"); };
 
+  function ensurePesertaPersonalCodes() {
+    const customMap = JSON.parse(localStorage.getItem("murajaahku_custom_codes_v2") || "{}");
+    let changed = false;
+    (state.db.peserta || []).forEach(p => {
+      if (customMap[p.id]) {
+        p.kode_pribadi = customMap[p.id];
+      } else if (!p.kode_pribadi) {
+        p.kode_pribadi = generatePersonalCode(p.nama_peserta);
+        customMap[p.id] = p.kode_pribadi;
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem("murajaahku_custom_codes_v2", JSON.stringify(customMap));
+    }
+  }
+
   function ensureLocalDefaultData() {
     const today = new Date().toISOString().split("T")[0];
     const hariIni = getIndonesianDayName(today);
@@ -583,7 +666,7 @@
     ];
     const lulusZaid = computeUniqueAyatLulus([], 78, 1, 20);
     const initialPeserta = [
-      { id: "pst-1", ruang_id: "rng-1", nama_peserta: "Muhammad Zaidan", target_surah: 78, target_ayat_awal: 21, target_ayat_akhir: 40, ayat_lulus_json: lulusZaid, total_ayat_lulus: lulusZaid.length }
+      { id: "pst-1", ruang_id: "rng-1", nama_peserta: "Muhammad Zaidan", kode_pribadi: "ZAI-101", target_surah: 78, target_ayat_awal: 21, target_ayat_akhir: 40, ayat_lulus_json: lulusZaid, total_ayat_lulus: lulusZaid.length }
     ];
     const initialSetoran = [
       { id: "str-1", peserta_id: "pst-1", ruang_id: "rng-1", ustaz_id: "ust-1", tanggal_kegiatan: today, hari_kegiatan: hariIni, metode: "Offline", surah_no: 78, nama_surah: "An-Naba'", ayat_awal: 1, ayat_akhir: 20, status_feedback: "Lulus", kategori_feedback: ["Tajwid", "Kelancaran"], catatan_manual: "Bacaan sangat lancar.", audio_data: "" }
@@ -609,8 +692,9 @@
       }
     } else {
       state.db = { ustaz: initialUstaz, ruang_belajar: initialRuang, peserta: initialPeserta, setoran: initialSetoran, kehadiran: [], materi: initialMateri };
-      savePreviewDB();
     }
+    ensurePesertaPersonalCodes();
+    savePreviewDB();
   }
 
   async function autoSetupDatabase() {
@@ -624,7 +708,6 @@
       }
       await loadAllFromSupabase();
 
-      // Pulihkan sesi Supabase Authentication Admin jika masih aktif
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user) {
         state.currentUser = {
@@ -640,7 +723,9 @@
   }
 
   function savePreviewDB() {
-    localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db));
+    try {
+      localStorage.setItem("murajaahku_preview_db_v6", JSON.stringify(state.db));
+    } catch (e) {}
   }
 
   async function loadAllFromSupabase() {
@@ -658,7 +743,17 @@
     if (Array.isArray(p.data)) state.db.peserta = p.data;
     if (Array.isArray(s.data)) state.db.setoran = s.data;
     if (Array.isArray(k.data)) state.db.kehadiran = k.data;
-    if (Array.isArray(m.data)) state.db.materi = m.data;
+    if (Array.isArray(m.data)) {
+      const sysLogo = m.data.find(item => item.judul === "__SYSTEM_LOGO__");
+      if (sysLogo && (sysLogo.file_data || sysLogo.file_url)) {
+        const remoteLogo = sysLogo.file_data || sysLogo.file_url;
+        state.appLogoUrl = remoteLogo;
+        localStorage.setItem("murajaahku_custom_logo_v2", remoteLogo);
+      }
+      state.db.materi = m.data.filter(item => item.judul !== "__SYSTEM_LOGO__");
+    }
+    ensurePesertaPersonalCodes();
+    savePreviewDB();
   }
 
   function getMenuByRole() {
@@ -669,9 +764,13 @@
       ];
     }
     if (state.role === "ustaz") {
+      const myRoomIds = state.db.ruang_belajar.filter(r => r.ustaz_id === state.currentUser?.id).map(r => r.id);
+      const pendingAudioCount = state.db.setoran.filter(
+        s => (s.ustaz_id === state.currentUser?.id || myRoomIds.includes(s.ruang_id)) && s.audio_data && s.status_feedback === "Menunggu Evaluasi"
+      ).length;
       return [
         { id: "ustaz_ringkasan", label: "Ruang Belajar", icon: "ri-home-heart-line" },
-        { id: "ustaz_setoran_audio", label: "Setoran", icon: "ri-mic-fill" },
+        { id: "ustaz_setoran_audio", label: pendingAudioCount > 0 ? `Setoran (${pendingAudioCount})` : "Setoran", icon: "ri-mic-fill" },
         { id: "mushaf", label: "Mushaf Juz 30", icon: "ri-book-open-line" }
       ];
     }
@@ -840,7 +939,7 @@
             <div class="stat-metric-icon"><i class="ri-pie-chart-2-line"></i></div>
             <div class="stat-metric-info">
               <h4>${avgProgress}%</h4>
-              <p>Rata-Rata Progres Target</p>
+              <p>Rata-Rata Progres Surah</p>
             </div>
           </div>
           <div class="stat-metric-card">
@@ -869,7 +968,7 @@
     document.getElementById("pageHeaderTitle").textContent = "Materi Pembelajaran";
     document.getElementById("pageHeaderSub").textContent = "Unduh Modul & Materi PDF";
 
-    const listMateri = state.db.materi || [];
+    const listMateri = (state.db.materi || []).filter(m => m.judul !== "__SYSTEM_LOGO__");
 
     container.innerHTML = `
       <div class="hero-banner">
@@ -901,12 +1000,12 @@
                 <h4>${m.judul}</h4>
                 <p style="margin-top:2px;">${m.deskripsi || 'Dokumen materi PDF'}</p>
                 <span style="font-size:0.7rem;color:var(--text-muted);display:inline-block;margin-top:4px;">
-                  <i class="ri-attachment-2"></i> ${m.nama_file || 'Materi.pdf'} ${m.tanggal ? `• ${m.tanggal}` : ''}
+                  <i class="ri-attachment-2"></i> ${m.nama_file || m.file_name || 'Materi.pdf'} ${m.tanggal ? `• ${m.tanggal}` : ''}
                 </span>
               </div>
             </div>
             <div class="row-right">
-              <a href="${m.file_data}" download="${m.nama_file || (m.judul.replace(/[^a-z0-9]/gi, '_') + '.pdf')}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+              <a href="${m.file_data || m.file_url}" download="${m.nama_file || m.file_name || (m.judul.replace(/[^a-z0-9]/gi, '_') + '.pdf')}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
                 <i class="ri-download-2-line"></i> Download PDF
               </a>
             </div>
@@ -951,7 +1050,8 @@
     
     state.unlockedRoom = room;
     state.publicSelectedPesertaId = "ALL";
-    const roomSetorans = state.db.setoran.filter(s => s.ruang_id === room.id);
+    // Hanya ambil tanggal dari setoran yang SUDAH diulas Ustaz (bukan Menunggu Evaluasi)
+    const roomSetorans = state.db.setoran.filter(s => s.ruang_id === room.id && s.status_feedback !== "Menunggu Evaluasi");
     state.publicSelectedDate = roomSetorans.length > 0 ? roomSetorans[0].tanggal_kegiatan : new Date().toISOString().split("T")[0];
     state.activeMenu = "ruang_publik";
     renderApp();
@@ -963,7 +1063,8 @@
     
     const ustaz = state.db.ustaz.find(u => u.id === room.ustaz_id);
     const pesertaList = state.db.peserta.filter(p => p.ruang_id === room.id);
-    const setoranRoom = state.db.setoran.filter(s => s.ruang_id === room.id);
+    // Rekaman yang belum diulas Ustaz ("Menunggu Evaluasi") TIDAK dimasukkan ke dalam Ruang Belajar
+    const setoranRoom = state.db.setoran.filter(s => s.ruang_id === room.id && s.status_feedback !== "Menunggu Evaluasi");
     const kehadiranRoom = state.db.kehadiran.filter(k => k.ruang_id === room.id);
     
     const availableDates = Array.from(new Set([...setoranRoom.map(s => s.tanggal_kegiatan), ...kehadiranRoom.map(k => k.tanggal_kegiatan)])).filter(Boolean).sort((a, b) => b.localeCompare(a));
@@ -974,7 +1075,27 @@
     document.getElementById("pageHeaderTitle").textContent = room.nama_ruang;
     document.getElementById("pageHeaderSub").textContent = `Pembimbing: ${ustaz ? ustaz.nama_lengkap : '-'}`;
 
+    const filteredPesertaForProgress = pesertaList.filter(p => state.publicSelectedPesertaId === "ALL" || p.id === state.publicSelectedPesertaId);
+
     container.innerHTML = `
+      <!-- BANNER INFORMASI RUANG BELAJAR & NAMA USTAZ PEMBUAT RUANGAN -->
+      <div class="hero-banner">
+        <div class="hero-top">
+          <div>
+            <span class="hero-badge"><i class="ri-home-heart-line"></i> Kode Ruangan: ${room.kode_ruang}</span>
+            <h3>${room.nama_ruang}</h3>
+            <p style="margin-top:4px;">
+              <i class="ri-user-star-line"></i> Dibuat & Dibimbing oleh: <strong>${ustaz ? ustaz.nama_lengkap : 'Ustaz / Ustazah Pembimbing'}</strong>
+              ${room.deskripsi ? ` • ${room.deskripsi}` : ''}
+            </p>
+          </div>
+          <div style="background:rgba(255,255,255,0.18);padding:10px 14px;border-radius:14px;text-align:right;">
+            <span style="font-size:0.7rem;display:block;opacity:0.9;">Tanggal Terpilih</span>
+            <strong style="font-size:0.9rem;">${hariPilih}, ${selectedDate}</strong>
+          </div>
+        </div>
+      </div>
+
       <div class="modern-workspace-card">
         <span class="step-badge"><i class="ri-calendar-check-line"></i> Filter Tanggal Kegiatan</span>
         <div class="symmetric-filter-grid">
@@ -1002,16 +1123,50 @@
         ` : ''}
       </div>
 
+      <!-- KARTU PROGRES PESERTA DIUPDATE SETIAP PERGANTIAN TANGGAL & MENAMPILKAN TOTAL AYAT SURAH (.../40) -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title"><i class="ri-bar-chart-horizontal-line"></i> Progres Hafalan Surah Peserta (s/d ${hariPilih}, ${selectedDate})</div>
+          <span class="badge badge-lulus">${filteredPesertaForProgress.length} Peserta</span>
+        </div>
+        ${filteredPesertaForProgress.length === 0 ? `
+          <p style="font-size:0.84rem;color:var(--text-muted);">Belum ada peserta di ruang belajar ini.</p>
+        ` : filteredPesertaForProgress.map(p => {
+          const stOnDate = setoranRoom.find(s => s.peserta_id === p.id && s.tanggal_kegiatan === selectedDate);
+          const progSurah = getActiveSurahProgressInfo(p, stOnDate, selectedDate);
+          return `
+            <div class="list-row" style="margin-bottom:10px;">
+              <div class="row-left">
+                <div class="avatar-circle">${p.nama_peserta.charAt(0).toUpperCase()}</div>
+                <div class="row-info" style="width:100%;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <h4>${p.nama_peserta}</h4>
+                    <span class="badge badge-lulus">QS. ${progSurah.namaSurah} • ${progSurah.lulusCount} / ${progSurah.totalAyatTarget} Ayat (${progSurah.persen}%)</span>
+                  </div>
+                  <p style="margin-top:4px;font-size:0.8rem;color:#334155;font-weight:600;">
+                    Capaian Surah yang Dibaca: <strong>${progSurah.lulusCount} dari ${progSurah.totalAyatTarget} Ayat</strong>
+                  </p>
+                  <div class="progress-wrap" style="margin-top:6px;">
+                    <div class="progress-fill" style="width:${progSurah.persen}%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+
       <div class="glass-card">
         <div class="card-header"><div class="card-title"><i class="ri-chat-check-line"></i> Catatan Ustaz — ${hariPilih}, ${selectedDate}</div></div>
         ${setoranOnDate.length === 0 ? `
           <div style="text-align:center;padding:24px 16px;background:#f8fafc;border-radius:14px;color:var(--text-muted);">
-            <i class="ri-file-search-line" style="font-size:1.8rem;color:var(--primary-dark);"></i><p style="margin-top:8px;font-size:0.86rem;font-weight:700;">Belum ada catatan setoran pada tanggal ini.</p>
+            <i class="ri-file-search-line" style="font-size:1.8rem;color:var(--primary-dark);"></i><p style="margin-top:8px;font-size:0.86rem;font-weight:700;">Belum ada catatan evaluasi Ustaz pada tanggal ini.</p>
           </div>
         ` : setoranOnDate.map(s => {
           const p = pesertaList.find(x => x.id === s.peserta_id);
-          const progSurah = getActiveSurahProgressInfo(p, s);
-          const badgeClass = s.status_feedback === "Lulus" ? "badge-lulus" : s.status_feedback === "Perlu perbaikan" ? "badge-perbaikan" : s.status_feedback === "Menunggu Evaluasi" ? "badge-menunggu" : "badge-mengulang";
+          const progSurah = getActiveSurahProgressInfo(p, s, selectedDate);
+          const khd = kehadiranRoom.find(k => k.peserta_id === s.peserta_id && k.tanggal_kegiatan === selectedDate);
+          const badgeClass = s.status_feedback === "Lulus" ? "badge-lulus" : s.status_feedback === "Perlu perbaikan" ? "badge-perbaikan" : "badge-mengulang";
 
           return `
             <div class="list-row" style="align-items:flex-start;">
@@ -1019,19 +1174,24 @@
                 <div class="avatar-circle">${p ? p.nama_peserta.charAt(0).toUpperCase() : 'P'}</div>
                 <div class="row-info" style="width:100%;">
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                    <h4>${p ? p.nama_peserta : "Peserta"}</h4><span class="badge ${badgeClass}">${s.status_feedback}</span>
+                    <h4>${p ? p.nama_peserta : "Peserta"}</h4>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                      ${khd ? `<span class="badge badge-hadir">${khd.status_kehadiran}</span>` : ''}
+                      <span class="badge ${badgeClass}">${s.status_feedback}</span>
+                    </div>
                   </div>
                   <p style="margin-top:6px;color:#0f172a;font-weight:600;font-size:0.86rem;">
-                    Target Lulus di Surah Ini: <strong>QS. ${s.nama_surah} (${progSurah.lulusCount} / ${progSurah.totalAyatTarget} Ayat)</strong>
+                    Bacaan Hari Ini: <strong>QS. ${s.nama_surah} Ayat ${s.ayat_awal}–${s.ayat_akhir}</strong> • Progres Surah: <strong>${progSurah.lulusCount} / ${progSurah.totalAyatTarget} Ayat (${progSurah.persen}%)</strong>
                   </p>
                   <div style="margin-top:8px;">
                     <div class="progress-wrap"><div class="progress-fill" style="width:${progSurah.persen}%;"></div></div>
                   </div>
                   ${renderFeedbackTagsHTML(s.kategori_feedback)}
                   <div style="margin-top:10px;background:#f8fafc;padding:10px 14px;border-radius:12px;border-left:3px solid var(--primary);">
-                    <span style="font-size:0.75rem;font-weight:800;color:var(--primary-dark);text-transform:uppercase;">Catatan Tambahan:</span>
+                    <span style="font-size:0.75rem;font-weight:800;color:var(--primary-dark);text-transform:uppercase;">Catatan Ustaz (${ustaz ? ustaz.nama_lengkap : 'Pembimbing'}):</span>
                     <p style="font-size:0.86rem;color:#1e293b;margin-top:4px;">${s.catatan_manual ? `"${s.catatan_manual}"` : "-"}</p>
                   </div>
+                  ${s.audio_data ? `<div style="margin-top:10px;"><audio controls src="${s.audio_data}" style="width:100%;height:40px;"></audio></div>` : ''}
                 </div>
               </div>
             </div>
@@ -1096,16 +1256,21 @@
 
     container.innerHTML = `
       <div class="modern-workspace-card">
-        <span class="step-badge"><i class="ri-mic-fill"></i> Formulir Setoran Audio</span>
+        <span class="step-badge"><i class="ri-mic-fill"></i> Formulir Setoran Audio (Wajib Kode Pribadi)</span>
         <div class="form-grid">
           <div class="form-group"><label>1. Ke Ustaz Siapa</label><select id="setorUstazSelect" class="form-control" onchange="window.handleSetorUstazChange(this.value)">${ustazList.length === 0 ? `<option value="">-- Belum Ada Ustaz --</option>` : ustazList.map(u => `<option value="${u.id}" ${u.id === state.setorSelectedUstazId ? 'selected' : ''}>${u.nama_lengkap}</option>`).join("")}</select></div>
           <div class="form-group"><label>2. Pilih Nama Terdaftar</label><select id="setorPesertaSelect" class="form-control" onchange="window.handleSetorPesertaChange(this.value)">${pesertaOfUstaz.length === 0 ? `<option value="">-- Tidak ada peserta --</option>` : pesertaOfUstaz.map(p => { const r = roomsOfUstaz.find(x => x.id === p.ruang_id); return `<option value="${p.id}" ${p.id === state.setorSelectedPesertaId ? 'selected' : ''}>${p.nama_peserta} ${r ? `(${r.nama_ruang})` : ''}</option>`; }).join("")}</select></div>
-          <div class="form-group"><label>3. Tanggal Setoran (${hariSetor})</label><input type="date" id="setorTanggalInput" class="form-control" value="${state.setorSelectedDate}" onchange="window.handleSetorDateChange(this.value)" /></div>
+          <div class="form-group"><label><i class="ri-key-fill" style="color:var(--primary-dark);"></i> 3. Kode Pribadi Peserta (Dari Ustaz)</label><input type="text" id="setorKodePribadiInput" class="form-control" placeholder="Ketik Kode Pribadi (contoh: ZAI-101)" value="${state.setorKodePribadiInput || ''}" oninput="state.setorKodePribadiInput = this.value" style="text-transform:uppercase;font-weight:800;letter-spacing:0.5px;" /></div>
         </div>
         <div class="form-grid">
-          <div class="form-group"><label>4. Surah yang Disetor</label><select id="setorSurahSelect" class="form-control" onchange="window.handleSetorSurahChange(this.value)">${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === Number(state.setorSelectedSurah) ? 'selected' : ''}>${s.no}. QS. ${s.nama} (${s.ayat} Ayat)</option>`).join("")}</select></div>
-          <div class="form-group"><label>5. Mulai Ayat</label><input type="number" id="setorAyatAwalInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${state.setorAyatAwal}" oninput="state.setorAyatAwal = Number(this.value || 1)" /></div>
-          <div class="form-group"><label>6. Sampai Ayat (Maks ${activeSurahObj.ayat})</label><input type="number" id="setorAyatAkhirInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${Math.min(activeSurahObj.ayat, state.setorAyatAkhir)}" oninput="state.setorAyatAkhir = Number(this.value || 1)" /></div>
+          <div class="form-group"><label>4. Tanggal Setoran (${hariSetor})</label><input type="date" id="setorTanggalInput" class="form-control" value="${state.setorSelectedDate}" onchange="window.handleSetorDateChange(this.value)" /></div>
+          <div class="form-group"><label>5. Surah yang Disetor</label><select id="setorSurahSelect" class="form-control" onchange="window.handleSetorSurahChange(this.value)">${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === Number(state.setorSelectedSurah) ? 'selected' : ''}>${s.no}. QS. ${s.nama} (${s.ayat} Ayat)</option>`).join("")}</select></div>
+          <div class="form-group"><label>6. Mulai Ayat s/d Akhir (Maks ${activeSurahObj.ayat})</label>
+            <div style="display:flex;gap:8px;">
+              <input type="number" id="setorAyatAwalInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${state.setorAyatAwal}" oninput="state.setorAyatAwal = Number(this.value || 1)" placeholder="Awal" />
+              <input type="number" id="setorAyatAkhirInput" class="form-control" min="1" max="${activeSurahObj.ayat}" value="${Math.min(activeSurahObj.ayat, state.setorAyatAkhir)}" oninput="state.setorAyatAkhir = Number(this.value || 1)" placeholder="Akhir" />
+            </div>
+          </div>
         </div>
 
         <div class="recorder-box ${recordedBase64Audio ? 'has-audio' : ''}" id="recorderBoxContainer">
@@ -1367,15 +1532,23 @@
 
   window.submitPublicSetorHafalan = async function() {
     if (!state.setorSelectedUstazId || !state.setorSelectedPesertaId) return showToast("Pilih Ustaz dan Nama Pengirim!", true);
-    if (!recordedBase64Audio) return showToast("Silakan rekam suara atau unggah file terlebih dahulu!", true);
     const pObj = state.db.peserta.find(p => p.id === state.setorSelectedPesertaId);
     if (!pObj) return showToast("Peserta tidak ditemukan!", true);
+
+    const inputKode = (document.getElementById("setorKodePribadiInput")?.value || state.setorKodePribadiInput || "").trim().toUpperCase();
+    const expectedKode = String(pObj.kode_pribadi || "").trim().toUpperCase();
+    if (!inputKode || inputKode !== expectedKode) {
+      return showToast("Kode Pribadi salah! Hubungi Ustaz/Ustazah pembimbing Anda untuk mengetahui Kode Pribadi setoran.", true);
+    }
+
+    if (!recordedBase64Audio) return showToast("Silakan rekam suara atau unggah file terlebih dahulu!", true);
+
     const surahObj = getSurahByNo(state.setorSelectedSurah);
     const payload = {
       peserta_id: pObj.id, ruang_id: pObj.ruang_id, ustaz_id: state.setorSelectedUstazId,
       tanggal_kegiatan: state.setorSelectedDate, hari_kegiatan: getIndonesianDayName(state.setorSelectedDate), metode: "Online",
       surah_no: surahObj.no, nama_surah: surahObj.nama, ayat_awal: state.setorAyatAwal, ayat_akhir: state.setorAyatAkhir,
-      status_feedback: "Menunggu Evaluasi", kategori_feedback: [], catatan_manual: "Rekaman suara dari peserta.", audio_data: recordedBase64Audio
+      status_feedback: "Menunggu Evaluasi", kategori_feedback: [], catatan_manual: "Rekaman suara dari peserta (Menunggu ulasan Ustaz).", audio_data: recordedBase64Audio
     };
     if (HAS_REAL_SUPABASE && supabase) {
       const { error } = await supabase.from("setoran").insert([payload]);
@@ -1386,11 +1559,12 @@
       savePreviewDB();
     }
     recordedBase64Audio = "";
+    state.setorKodePribadiInput = "";
     if (recordedAudioBlobUrl) {
       try { URL.revokeObjectURL(recordedAudioBlobUrl); } catch (e) {}
       recordedAudioBlobUrl = "";
     }
-    showToast("Rekaman berhasil dikirim ke Ustaz!");
+    showToast("Rekaman berhasil dikirim ke Ustaz untuk diulas!");
     state.activeMenu = "beranda";
     renderApp();
   };
@@ -1420,7 +1594,12 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="regPass" class="form-control" placeholder="Minimal 3 karakter" />
+            <div class="password-field-wrap">
+              <input type="password" id="regPass" class="form-control" placeholder="Minimal 3 karakter" />
+              <button type="button" class="pw-eye-btn" onclick="window.togglePasswordVisibility('regPass', this)" title="Lihat/Sembunyikan Password">
+                <i class="ri-eye-line"></i>
+              </button>
+            </div>
           </div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.submitRegisterUstaz()">
             <i class="ri-check-line"></i> Daftarkan Akun Sekarang
@@ -1441,7 +1620,15 @@
             <span class="badge badge-lulus">Jalur Ustaz</span>
           </div>
           <div class="form-group"><label>Username Ustaz / Ustazah</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
-          <div class="form-group"><label>Password</label><input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="password-field-wrap">
+              <input type="password" id="loginUstazPass" class="form-control" placeholder="Masukkan password..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" />
+              <button type="button" class="pw-eye-btn" onclick="window.togglePasswordVisibility('loginUstazPass', this)" title="Lihat/Sembunyikan Password">
+                <i class="ri-eye-line"></i>
+              </button>
+            </div>
+          </div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Ustaz</button>
           <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">
             <span style="font-size:0.84rem;color:var(--text-muted);display:block;margin-bottom:8px;">Belum punya akun Ustaz / Ustazah?</span>
@@ -1465,7 +1652,15 @@
           <span class="badge badge-lulus"><i class="ri-lock-check-line"></i> Supabase Auth</span>
         </div>
         <div class="form-group"><label>Email Admin</label><input type="email" id="loginAdminEmail" class="form-control" placeholder="Masukkan email admin..." onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
-        <div class="form-group"><label>Password Admin</label><input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." onkeydown="if(event.key==='Enter') window.handleAdminLogin()" /></div>
+        <div class="form-group">
+          <label>Password Admin</label>
+          <div class="password-field-wrap">
+            <input type="password" id="loginAdminPass" class="form-control" placeholder="Masukkan password admin..." onkeydown="if(event.key==='Enter') window.handleAdminLogin()" />
+            <button type="button" class="pw-eye-btn" onclick="window.togglePasswordVisibility('loginAdminPass', this)" title="Lihat/Sembunyikan Password">
+              <i class="ri-eye-line"></i>
+            </button>
+          </div>
+        </div>
         <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleAdminLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Admin</button>
       </div>
     `;
@@ -1510,7 +1705,6 @@
           if (insertErr.code === "23505" || errMsg.includes("duplicate") || errMsg.includes("unique")) {
             return showToast(`Username "${userRaw}" sudah terdaftar di database!`, true);
           }
-          // Jika terkendala RLS atau tabel belum dibuat di Supabase, simpan ke lokal agar tetap bisa digunakan tanpa gagal
           const localIdx = state.db.ustaz.findIndex(u => (u.username || "").trim().toLowerCase() === normalizedUser);
           if (localIdx >= 0) state.db.ustaz[localIdx] = newU;
           else state.db.ustaz.push(newU);
@@ -1547,7 +1741,6 @@
     const password = (document.getElementById("loginUstazPass")?.value || "").trim();
     if (!username || !password) return showToast("Isi username dan password Ustaz!", true);
 
-    // Tolak tegas jika Admin mencoba login di halaman Ustaz
     if (username.includes("@") || username.toLowerCase() === "admin") {
       return showToast("Akses Ditolak! Email/Admin harus masuk melalui tombol 'Admin' di pojok kanan atas.", true);
     }
@@ -1557,14 +1750,10 @@
     if (HAS_REAL_SUPABASE && supabase) {
       try {
         const { data: listUstaz, error } = await supabase.from("ustaz").select("*");
-        if (!error && Array.isArray(listUstaz) && listUstaz.length > 0) {
+        if (!error && Array.isArray(listUstaz)) {
           state.db.ustaz = listUstaz;
         }
       } catch (e) {}
-    }
-
-    if (!Array.isArray(state.db.ustaz) || state.db.ustaz.length === 0) {
-      ensureLocalDefaultData();
     }
 
     const found = (state.db.ustaz || []).find(
@@ -1572,7 +1761,7 @@
     );
 
     if (!found) {
-      return showToast("Username atau password Ustaz tidak sesuai!", true);
+      return showToast("Username atau password Ustaz tidak sesuai (atau akun telah dihapus Admin)!", true);
     }
 
     state.currentUser = found;
@@ -1595,7 +1784,6 @@
 
     const normInput = email.toLowerCase();
 
-    // Tolak tegas jika Ustaz mencoba login di jalur Portal Admin
     const isUstazAccount = (state.db.ustaz || []).some(
       u => (u.username || "").trim().toLowerCase() === normInput
     );
@@ -1604,10 +1792,8 @@
     }
 
     if (HAS_REAL_SUPABASE && supabase) {
-      // 1. Konfirmasi otomatis email di auth.users agar tidak tertahan "Email not confirmed"
       try { await supabase.rpc("confirm_admin_email", { target_email: normInput }); } catch (e) {}
 
-      // 2. Autentikasi resmi via Supabase Authentication (signInWithPassword)
       const { data, error } = await supabase.auth.signInWithPassword({ email: normInput, password });
       if (!error && data?.user) {
         state.currentUser = { email: data.user.email, nama_lengkap: "Administrator" };
@@ -1619,7 +1805,6 @@
         return;
       }
 
-      // 3. Verifikasi langsung ke tabel auth.users di PostgreSQL Supabase via RPC
       try {
         const { data: rpcVerified, error: rpcErr } = await supabase.rpc("verify_admin_credentials", {
           target_email: normInput,
@@ -1636,7 +1821,6 @@
         }
       } catch (e2) {}
 
-      // 4. Jika terjadi kendala konfigurasi URL/Path pada endpoint Supabase tetapi bukan karena salah password murni
       const errMsg = (error?.message || "").toLowerCase();
       const isInvalidCreds = errMsg.includes("invalid login credentials");
       if (!isInvalidCreds) {
@@ -1674,7 +1858,7 @@
             <div>
               <span class="hero-badge"><i class="ri-user-star-line"></i> Dashboard Pembimbing</span>
               <h3>${ustaz.nama_lengkap}</h3>
-              <p>Pilih ruang belajar untuk mengelola kehadiran dan hafalan peserta.</p>
+              <p>Pilih ruang belajar untuk mengelola kehadiran, Kode Pribadi peserta, dan evaluasi hafalan.</p>
             </div>
             <button class="btn" style="background:#ffffff;color:var(--primary-dark);" onclick="window.openAddRoomModal()"><i class="ri-add-circle-line"></i> Buat Ruang Baru</button>
           </div>
@@ -1706,7 +1890,7 @@
     const hariStr = getIndonesianDayName(selectedDate);
     const selectedPeserta = pesertaRoom.find(p => p.id === state.ustazSelectedPesertaId) || null;
 
-    const existingSetoranToday = selectedPeserta ? state.db.setoran.find(s => s.peserta_id === selectedPeserta.id && s.tanggal_kegiatan === selectedDate) : null;
+    const existingSetoranToday = selectedPeserta ? state.db.setoran.find(s => s.peserta_id === selectedPeserta.id && s.tanggal_kegiatan === selectedDate && s.status_feedback !== "Menunggu Evaluasi") : null;
     const existingHadirToday = selectedPeserta ? state.db.kehadiran.find(k => k.peserta_id === selectedPeserta.id && k.tanggal_kegiatan === selectedDate) : null;
 
     const defaultSurahNo = existingSetoranToday ? existingSetoranToday.surah_no : (selectedPeserta?.target_surah || 78);
@@ -1724,9 +1908,9 @@
       <div class="hero-banner">
         <div class="hero-top">
           <div>
-            <span class="hero-badge"><i class="ri-folder-open-line"></i> Ruang Aktif</span>
+            <span class="hero-badge"><i class="ri-folder-open-line"></i> Ruang Aktif • Kode: ${activeRoom.kode_ruang}</span>
             <h3>${activeRoom.nama_ruang}</h3>
-            <p>Pilih tanggal kegiatan dan nama peserta untuk mulai mengisi catatan.</p>
+            <p>Pembimbing: <strong>${ustaz.nama_lengkap}</strong> • Pilih tanggal kegiatan dan nama peserta untuk mulai mengisi catatan.</p>
           </div>
         </div>
       </div>
@@ -1740,7 +1924,7 @@
             <div style="display:flex;gap:8px;align-items:center;">
               <select class="form-control" onchange="window.selectUstazPeserta(this.value)" style="flex:1;">
                 <option value="">-- Pilih Peserta --</option>
-                ${pesertaRoom.map(p => { const sudah = state.db.setoran.some(s => s.peserta_id === p.id && s.tanggal_kegiatan === selectedDate); return `<option value="${p.id}" ${p.id === state.ustazSelectedPesertaId ? 'selected' : ''}>${p.nama_peserta} ${sudah?'(Terisi)':''}</option>`; }).join("")}
+                ${pesertaRoom.map(p => { const sudah = state.db.setoran.some(s => s.peserta_id === p.id && s.tanggal_kegiatan === selectedDate && s.status_feedback !== "Menunggu Evaluasi"); return `<option value="${p.id}" ${p.id === state.ustazSelectedPesertaId ? 'selected' : ''}>${p.nama_peserta} [Kode: ${p.kode_pribadi || '-'}] ${sudah?'(Terisi)':''}</option>`; }).join("")}
               </select>
               <button class="btn btn-outline" style="width:42px;height:42px;padding:0;flex-shrink:0;" onclick="window.openAddPesertaModal('${activeRoom.id}')" title="Tambah Nama Baru"><i class="ri-user-add-line"></i></button>
             </div>
@@ -1757,7 +1941,15 @@
       ` : `
         <div class="modern-workspace-card">
           <div class="card-header">
-            <div><span class="step-badge"><i class="ri-user-check-line"></i> Langkah 2 — Evaluasi ${selectedPeserta.nama_peserta}</span></div>
+            <div>
+              <span class="step-badge"><i class="ri-user-check-line"></i> Langkah 2 — Evaluasi ${selectedPeserta.nama_peserta}</span>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span class="badge badge-kode"><i class="ri-key-2-line"></i> Kode Pribadi Setor: <strong>${selectedPeserta.kode_pribadi || '-'}</strong></span>
+                <button type="button" class="btn btn-soft btn-sm" style="height:28px;padding:0 10px;font-size:0.74rem;" onclick="window.openEditKodePribadiModal('${selectedPeserta.id}')">
+                  <i class="ri-edit-line"></i> Custom Kode Pribadi
+                </button>
+              </div>
+            </div>
           </div>
           <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e2e8f0;">
             <label style="font-size:0.82rem;font-weight:800;display:block;margin-bottom:10px;">A. Kehadiran (${hariStr}, ${selectedDate})</label>
@@ -1789,9 +1981,9 @@
             <div>
               <label style="font-size:0.82rem;font-weight:800;display:block;margin-bottom:12px;">B. Catat Setoran & Feedback</label>
               <div class="form-grid">
-                <div class="form-group"><label>Surah</label><select id="ustazSurahSelect" class="form-control" onchange="window.updateUstazSurahMaxAyat(this.value)">${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === Number(defaultSurahNo) ? 'selected' : ''}>${s.no}. QS. ${s.nama}</option>`).join("")}</select></div>
+                <div class="form-group"><label>Surah</label><select id="ustazSurahSelect" class="form-control" onchange="window.updateUstazSurahMaxAyat(this.value)">${JUZ30_SURAHS.map(s => `<option value="${s.no}" ${Number(s.no) === Number(defaultSurahNo) ? 'selected' : ''}>${s.no}. QS. ${s.nama} (${s.ayat} Ayat)</option>`).join("")}</select></div>
                 <div class="form-group"><label>Ayat Awal</label><input type="number" id="ustazAyatAwal" class="form-control" min="1" max="${defaultSurahObj.ayat}" value="${defaultAyatAwal}" /></div>
-                <div class="form-group"><label id="ustazAyatAkhirLabel">Ayat Akhir (Maks ${defaultSurahObj.ayat})</label><input type="number" id="ustazAyatAkhir" class="form-control" min="1" max="${defaultSurahObj.ayat}" value="${defaultAyatAkhir}" /></div>
+                <div class="form-group"><label id="ustazAyatAkhirLabel">Ayat Akhir (Total ${defaultSurahObj.ayat} Ayat)</label><input type="number" id="ustazAyatAkhir" class="form-control" min="1" max="${defaultSurahObj.ayat}" value="${defaultAyatAkhir}" /></div>
               </div>
               <div class="form-group" style="margin-top:14px;">
                 <label>Status Evaluasi</label>
@@ -1824,20 +2016,33 @@
         </div>
       `}
       <div class="glass-card">
-        <div class="card-header"><div class="card-title"><i class="ri-file-list-3-line"></i> Rekap Peserta pada ${hariStr}, ${selectedDate}</div></div>
+        <div class="card-header"><div class="card-title"><i class="ri-file-list-3-line"></i> Daftar Peserta, Kode Pribadi & Progres pada ${hariStr}, ${selectedDate}</div></div>
         ${pesertaRoom.map(p => {
-          const st = state.db.setoran.find(s => s.peserta_id === p.id && s.tanggal_kegiatan === selectedDate);
+          const st = state.db.setoran.find(s => s.peserta_id === p.id && s.tanggal_kegiatan === selectedDate && s.status_feedback !== "Menunggu Evaluasi");
           const hd = state.db.kehadiran.find(k => k.peserta_id === p.id && k.tanggal_kegiatan === selectedDate);
+          const prog = getActiveSurahProgressInfo(p, st, selectedDate);
           return `
-            <div class="list-row" style="opacity:${!st && !hd ? 0.7 : 1};">
+            <div class="list-row">
               <div class="row-left">
                 <div class="avatar-circle">${p.nama_peserta.charAt(0).toUpperCase()}</div>
                 <div class="row-info" style="width:100%;">
-                  <h4>${p.nama_peserta}</h4>
-                  <p style="margin-top:4px;font-size:0.75rem;">${hd ? `<span class="badge badge-hadir">${hd.status_kehadiran}</span>` : 'Belum presensi'} ${st ? `• QS. ${st.nama_surah} (${st.status_feedback})` : ''}</p>
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <h4>${p.nama_peserta}</h4>
+                    <span class="badge badge-kode"><i class="ri-key-2-line"></i> Kode Pribadi: <strong>${p.kode_pribadi || '-'}</strong></span>
+                  </div>
+                  <p style="margin-top:4px;font-size:0.78rem;color:#0f172a;font-weight:600;">
+                    Progres Surah: <strong>QS. ${prog.namaSurah} (${prog.lulusCount} / ${prog.totalAyatTarget} Ayat • ${prog.persen}%)</strong>
+                  </p>
+                  <div class="progress-wrap" style="margin-top:5px;">
+                    <div class="progress-fill" style="width:${prog.persen}%;"></div>
+                  </div>
+                  <p style="margin-top:6px;font-size:0.75rem;">${hd ? `<span class="badge badge-hadir">${hd.status_kehadiran}</span>` : 'Belum presensi'} ${st ? `• Evaluasi Tanggal Ini: <strong>QS. ${st.nama_surah} (${st.status_feedback})</strong>` : ''}</p>
                 </div>
               </div>
-              <div class="row-right"><button type="button" class="btn btn-outline btn-sm" onclick="window.selectUstazPeserta('${p.id}')">Pilih</button></div>
+              <div class="row-right">
+                <button type="button" class="btn btn-soft btn-sm" onclick="window.openEditKodePribadiModal('${p.id}')" title="Ubah Kode Pribadi"><i class="ri-key-line"></i> Custom Kode</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="window.selectUstazPeserta('${p.id}')">Pilih</button>
+              </div>
             </div>
           `;
         }).join("")}
@@ -1845,10 +2050,47 @@
     `;
   }
 
+  window.openEditKodePribadiModal = function(pesertaId) {
+    const p = state.db.peserta.find(x => x.id === pesertaId);
+    if (!p) return;
+    openModal(`
+      <div class="card-header"><div class="card-title"><i class="ri-key-2-line"></i> Custom Kode Pribadi — ${p.nama_peserta}</div></div>
+      <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:12px;">
+        Kode Pribadi ini wajib dimasukkan oleh <strong>${p.nama_peserta}</strong> saat mengirim rekaman suara di menu Setor Hafalan.
+      </p>
+      <div class="form-group">
+        <label>Kode Pribadi Baru</label>
+        <input type="text" id="modalKodePribadiInput" class="form-control" value="${p.kode_pribadi || generatePersonalCode(p.nama_peserta)}" style="text-transform:uppercase;font-weight:800;letter-spacing:1px;" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+        <button type="button" class="btn btn-soft" onclick="window.closeModal()">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="window.saveCustomKodePribadi('${p.id}')"><i class="ri-save-line"></i> Simpan Kode</button>
+      </div>
+    `);
+  };
+
+  window.saveCustomKodePribadi = async function(pesertaId) {
+    const p = state.db.peserta.find(x => x.id === pesertaId);
+    if (!p) return;
+    const raw = (document.getElementById("modalKodePribadiInput")?.value || "").trim().toUpperCase();
+    if (!raw) return showToast("Kode Pribadi tidak boleh kosong!", true);
+    p.kode_pribadi = raw;
+    const customMap = JSON.parse(localStorage.getItem("murajaahku_custom_codes_v2") || "{}");
+    customMap[p.id] = raw;
+    localStorage.setItem("murajaahku_custom_codes_v2", JSON.stringify(customMap));
+    if (HAS_REAL_SUPABASE && supabase) {
+      try { await supabase.from("peserta").update({ kode_pribadi: raw }).eq("id", p.id); } catch (e) {}
+    }
+    savePreviewDB();
+    window.closeModal();
+    showToast(`Kode Pribadi ${p.nama_peserta} diubah menjadi: ${raw}`);
+    renderApp();
+  };
+
   window.enterUstazRoom = function(roomId) { state.ustazActiveRoomId = roomId; state.ustazSelectedPesertaId = ""; state.ustazForceReplaceMode = false; renderApp(); };
   window.changeUstazDate = function(val) { state.selectedDate = val; state.ustazForceReplaceMode = false; renderApp(); };
   window.selectUstazPeserta = function(pid) { state.ustazSelectedPesertaId = pid; state.ustazForceReplaceMode = false; ustazSelectedCategories = []; ustazSelectedStatus = "Lulus"; renderApp(); };
-  window.updateUstazSurahMaxAyat = function(surahNo) { const s = getSurahByNo(surahNo); const inp = document.getElementById("ustazAyatAkhir"); if(inp) { inp.max = s.ayat; inp.value = s.ayat; } document.getElementById("ustazAyatAkhirLabel").textContent = `Ayat Akhir (Maks ${s.ayat})`; };
+  window.updateUstazSurahMaxAyat = function(surahNo) { const s = getSurahByNo(surahNo); const inp = document.getElementById("ustazAyatAkhir"); if(inp) { inp.max = s.ayat; inp.value = s.ayat; } document.getElementById("ustazAyatAkhirLabel").textContent = `Ayat Akhir (Total ${s.ayat} Ayat)`; };
   window.setUstazStatusChoice = function(val) { ustazSelectedStatus = val; renderApp(); };
   window.toggleUstazCategoryChip = function(cat) { const idx = ustazSelectedCategories.indexOf(cat); if(idx >= 0) ustazSelectedCategories.splice(idx, 1); else ustazSelectedCategories.push(cat); renderApp(); };
 
@@ -1873,7 +2115,7 @@
     const akhir = Math.min(surahObj.ayat, Math.max(awal, Number(document.getElementById("ustazAyatAkhir").value)));
     const cat = document.getElementById("ustazCatatanInput").value.trim();
 
-    const existingIdx = state.db.setoran.findIndex(s => s.peserta_id === pid && s.tanggal_kegiatan === tgl);
+    const existingIdx = state.db.setoran.findIndex(s => s.peserta_id === pid && s.tanggal_kegiatan === tgl && s.status_feedback !== "Menunggu Evaluasi");
     const record = {
       peserta_id: pid, ruang_id: roomId, ustaz_id: state.currentUser.id,
       tanggal_kegiatan: tgl, hari_kegiatan: getIndonesianDayName(tgl), metode: "Offline",
@@ -1894,9 +2136,11 @@
     if (pObj) {
       recomputePesertaProgressFromSetoran(pid);
       if (ustazSelectedStatus === "Lulus") {
-        pObj.target_surah = Number(document.getElementById("nextTargetSurah").value);
-        pObj.target_ayat_awal = Number(document.getElementById("nextTargetAwal").value);
-        pObj.target_ayat_akhir = Number(document.getElementById("nextTargetAkhir").value);
+        pObj.target_surah = Number(document.getElementById("nextTargetSurah")?.value || surahNo);
+        pObj.target_ayat_awal = Number(document.getElementById("nextTargetAwal")?.value || 1);
+        pObj.target_ayat_akhir = Number(document.getElementById("nextTargetAkhir")?.value || surahObj.ayat);
+      } else {
+        pObj.target_surah = surahNo;
       }
       if(HAS_REAL_SUPABASE && supabase) await supabase.from("peserta").update({target_surah: pObj.target_surah, target_ayat_awal: pObj.target_ayat_awal, target_ayat_akhir: pObj.target_ayat_akhir, ayat_lulus_json: pObj.ayat_lulus_json, total_ayat_lulus: pObj.total_ayat_lulus}).eq("id", pObj.id);
     }
@@ -1906,31 +2150,44 @@
   function renderUstazSetoranAudio(container) {
     const ustaz = state.currentUser;
     document.getElementById("pageHeaderTitle").textContent = "Setoran Masuk";
-    document.getElementById("pageHeaderSub").textContent = "Rekaman Suara dari Pengirim";
+    document.getElementById("pageHeaderSub").textContent = "Terima, Ulas, atau Hapus Rekaman Suara Peserta";
 
     const myRoomIds = state.db.ruang_belajar.filter(r => r.ustaz_id === ustaz.id).map(r => r.id);
-    const audioSubmissions = state.db.setoran.filter(s => (s.ustaz_id === ustaz.id || myRoomIds.includes(s.ruang_id)) && s.audio_data);
+    const audioSubmissions = state.db.setoran.filter(s => (s.ustaz_id === ustaz.id || myRoomIds.includes(s.ruang_id)) && (s.audio_data || s.status_feedback === "Menunggu Evaluasi"));
 
     container.innerHTML = `
       <div class="glass-card">
-        <div class="card-header"><div class="card-title"><i class="ri-voiceprint-line"></i> Rekaman Masuk (${audioSubmissions.length})</div></div>
+        <div class="card-header">
+          <div class="card-title"><i class="ri-voiceprint-line"></i> Rekaman Masuk (${audioSubmissions.length})</div>
+          <span class="badge badge-menunggu">Rekaman Belum Diulas Tidak Ditampilkan di Ruang Belajar</span>
+        </div>
         ${audioSubmissions.length === 0 ? `<div style="text-align:center;padding:26px;color:var(--text-muted);"><i class="ri-mic-off-line" style="font-size:2.5rem;color:var(--primary-dark);"></i><p style="margin-top:8px;">Belum ada kiriman rekaman suara.</p></div>` 
           : audioSubmissions.map(s => {
             const p = state.db.peserta.find(x => x.id === s.peserta_id);
-            const badgeCls = s.status_feedback === "Lulus" ? "badge-lulus" : s.status_feedback === "Perlu perbaikan" ? "badge-perbaikan" : s.status_feedback === "Menunggu Evaluasi" ? "badge-menunggu" : "badge-mengulang";
+            const isPending = s.status_feedback === "Menunggu Evaluasi";
+            const badgeCls = s.status_feedback === "Lulus" ? "badge-lulus" : s.status_feedback === "Perlu perbaikan" ? "badge-perbaikan" : isPending ? "badge-menunggu" : "badge-mengulang";
             return `
-              <div class="list-row" style="align-items:flex-start;">
+              <div class="list-row" style="align-items:flex-start;background:${isPending ? '#fffbeb' : '#ffffff'};">
                 <div class="row-left">
                   <div class="avatar-circle"><i class="ri-play-fill"></i></div>
                   <div class="row-info" style="width:100%;">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                      <h4>${p?.nama_peserta || "Peserta"}</h4><span class="badge ${badgeCls}">${s.status_feedback}</span>
+                      <h4>${p?.nama_peserta || "Peserta"}</h4>
+                      <span class="badge ${badgeCls}">${isPending ? 'Menunggu Ulasan Ustaz' : s.status_feedback}</span>
                     </div>
-                    <p style="margin-top:4px;">QS. ${s.nama_surah} (Ayat ${s.ayat_awal}–${s.ayat_akhir}) • ${s.tanggal_kegiatan}</p>
-                    <div style="margin:10px 0;"><audio controls src="${s.audio_data}" style="width:100%;height:44px;"></audio></div>
+                    <p style="margin-top:4px;font-weight:600;color:#0f172a;">QS. ${s.nama_surah} (Ayat ${s.ayat_awal}–${s.ayat_akhir}) • Tanggal: ${s.tanggal_kegiatan}</p>
+                    ${s.audio_data ? `<div style="margin:10px 0;"><audio controls src="${s.audio_data}" style="width:100%;height:44px;"></audio></div>` : ''}
+                    ${!isPending && s.catatan_manual ? `<p style="font-size:0.8rem;color:#334155;">Ulasan: "${s.catatan_manual}"</p>` : ''}
                   </div>
                 </div>
-                <div class="row-right"><button class="btn btn-primary btn-sm" onclick="window.openEvaluateAudioModal('${s.id}')">Evaluasi</button></div>
+                <div class="row-right">
+                  <button class="btn btn-primary btn-sm" onclick="window.openEvaluateAudioModal('${s.id}')">
+                    <i class="ri-check-double-line"></i> ${isPending ? 'Terima & Evaluasi' : 'Ubah Evaluasi'}
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="window.deleteAudioSubmission('${s.id}')">
+                    <i class="ri-delete-bin-line"></i> Hapus Rekaman
+                  </button>
+                </div>
               </div>
             `;
           }).join("")}
@@ -1943,34 +2200,53 @@
     const s = state.db.setoran.find(x => x.id === sid); if (!s) return;
     modalEvalCats = Array.isArray(s.kategori_feedback) ? [...s.kategori_feedback] : [];
     const allCats = getFeedbackCategories();
+    const defaultNote = s.status_feedback === "Menunggu Evaluasi" ? "Alhamdulillah, rekaman telah diterima dan disimak oleh Ustaz." : (s.catatan_manual || "");
     
     openModal(`
-      <div class="card-header"><div class="card-title"><i class="ri-check-double-line"></i> Evaluasi Rekaman</div></div>
-      <p style="font-size:0.86rem;margin-bottom:12px;">QS. ${s.nama_surah} (${s.ayat_awal}–${s.ayat_akhir})</p>
-      <div class="form-group"><label>Status Evaluasi</label><select id="modalAudioStatus" class="form-control"><option value="Lulus" ${s.status_feedback === 'Lulus' ? 'selected' : ''}>Lulus</option><option value="Perlu perbaikan" ${s.status_feedback === 'Perlu perbaikan' ? 'selected' : ''}>Perlu perbaikan</option><option value="Perlu mengulang" ${s.status_feedback === 'Perlu mengulang' ? 'selected' : ''}>Perlu mengulang</option></select></div>
+      <div class="card-header"><div class="card-title"><i class="ri-check-double-line"></i> Terima & Evaluasi Rekaman</div></div>
+      <p style="font-size:0.86rem;margin-bottom:12px;">QS. ${s.nama_surah} (Ayat ${s.ayat_awal}–${s.ayat_akhir}) • Tanggal ${s.tanggal_kegiatan}</p>
+      <div class="form-group"><label>Status Evaluasi (Otomatis Masuk ke Ruang Belajar)</label><select id="modalAudioStatus" class="form-control"><option value="Lulus" ${s.status_feedback === 'Lulus' ? 'selected' : ''}>Lulus</option><option value="Perlu perbaikan" ${s.status_feedback === 'Perlu perbaikan' ? 'selected' : ''}>Perlu perbaikan</option><option value="Perlu mengulang" ${s.status_feedback === 'Perlu mengulang' ? 'selected' : ''}>Perlu mengulang</option></select></div>
       <div class="form-group"><label>Kategori Feedback</label><div class="chip-wrap" id="modalAudioChipWrap">${allCats.map(c => `<button type="button" class="chip-btn ${modalEvalCats.includes(c) ? 'selected' : ''}" onclick="window.toggleModalAudioCat(this, '${c}')">${c}</button>`).join("")}</div></div>
-      <div class="form-group"><label>Catatan Singkat</label><input type="text" id="modalAudioCatatan" class="form-control" value="${s.catatan_manual || ''}" /></div>
+      <div class="form-group"><label>Catatan Ustaz</label><input type="text" id="modalAudioCatatan" class="form-control" value="${defaultNote}" /></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
         <button class="btn btn-soft" onclick="window.closeModal()">Batal</button>
-        <button class="btn btn-primary" onclick="window.saveAudioEvaluation('${s.id}')">Simpan</button>
+        <button class="btn btn-primary" onclick="window.saveAudioEvaluation('${s.id}')"><i class="ri-check-line"></i> Terima & Masuk Ruang Belajar</button>
       </div>
     `);
   };
   window.toggleModalAudioCat = function(btn, cat) { const idx = modalEvalCats.indexOf(cat); if (idx >= 0) { modalEvalCats.splice(idx, 1); btn.classList.remove("selected"); } else { modalEvalCats.push(cat); btn.classList.add("selected"); } };
   window.saveAudioEvaluation = async function(sid) {
     const s = state.db.setoran.find(x => x.id === sid);
-    s.status_feedback = document.getElementById("modalAudioStatus").value; s.kategori_feedback = [...modalEvalCats]; s.catatan_manual = document.getElementById("modalAudioCatatan").value;
+    if (!s) return;
+    s.status_feedback = document.getElementById("modalAudioStatus").value;
+    s.kategori_feedback = [...modalEvalCats];
+    s.catatan_manual = document.getElementById("modalAudioCatatan").value;
+    const p = state.db.peserta.find(x => x.id === s.peserta_id);
+    if (p && s.surah_no) p.target_surah = Number(s.surah_no);
     recomputePesertaProgressFromSetoran(s.peserta_id);
     if(HAS_REAL_SUPABASE && supabase) await supabase.from("setoran").update({status_feedback: s.status_feedback, kategori_feedback: s.kategori_feedback, catatan_manual: s.catatan_manual}).eq("id", s.id);
-    savePreviewDB(); window.closeModal(); showToast("Evaluasi audio disimpan!"); renderApp();
+    savePreviewDB(); window.closeModal(); showToast("Rekaman diterima & ditampilkan di Ruang Belajar!"); renderApp();
+  };
+
+  window.deleteAudioSubmission = async function(sid) {
+    state.db.setoran = state.db.setoran.filter(x => x.id !== sid);
+    if (HAS_REAL_SUPABASE && supabase) {
+      await supabase.from("setoran").delete().eq("id", sid);
+    }
+    savePreviewDB();
+    showToast("Rekaman suara telah dihapus.");
+    renderApp();
   };
 
   window.openAddRoomModal = function() {
+    const isAdmin = state.role === "admin";
+    const ustazOptions = (state.db.ustaz || []).map(u => `<option value="${u.id}">${u.nama_lengkap}</option>`).join("");
     openModal(`
       <div class="card-header"><div class="card-title">Buat Ruang Baru</div></div>
-      <div class="form-group"><label>Nama Ruang</label><input type="text" id="nRName" class="form-control" /></div>
-      <div class="form-group"><label>Kode Unik (Akses Pengunjung)</label><input type="text" id="nRCode" class="form-control" style="text-transform:uppercase" /></div>
-      <div class="form-group"><label>Keterangan</label><input type="text" id="nRDesc" class="form-control" /></div>
+      ${isAdmin ? `<div class="form-group"><label>Pilih Ustaz / Ustazah Pembimbing</label><select id="nRUstaz" class="form-control">${ustazOptions}</select></div>` : ''}
+      <div class="form-group"><label>Nama Ruang</label><input type="text" id="nRName" class="form-control" placeholder="Contoh: Halaqah Al-Fajr" /></div>
+      <div class="form-group"><label>Kode Unik (Akses Pengunjung)</label><input type="text" id="nRCode" class="form-control" style="text-transform:uppercase" placeholder="Contoh: FAJR30" /></div>
+      <div class="form-group"><label>Keterangan</label><input type="text" id="nRDesc" class="form-control" placeholder="Keterangan kelas..." /></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button class="btn btn-soft" onclick="window.closeModal()">Batal</button><button class="btn btn-primary" onclick="window.saveNewRoom()">Simpan Ruang</button></div>
     `);
   };
@@ -1978,7 +2254,8 @@
     const nama = document.getElementById("nRName").value.trim(); const kode = document.getElementById("nRCode").value.trim().toUpperCase();
     if(!nama || !kode) return showToast("Nama dan kode wajib diisi!", true);
     if (state.db.ruang_belajar.some(r => (r.kode_ruang || "").toUpperCase() === kode)) return showToast("Kode sudah dipakai!", true);
-    const payload = { ustaz_id: state.currentUser.id, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
+    const chosenUstazId = document.getElementById("nRUstaz")?.value || state.currentUser?.id || state.db.ustaz[0]?.id;
+    const payload = { ustaz_id: chosenUstazId, nama_ruang: nama, kode_ruang: kode, deskripsi: document.getElementById("nRDesc").value };
     if(HAS_REAL_SUPABASE && supabase) { await supabase.from("ruang_belajar").insert([payload]); await loadAllFromSupabase(); } else state.db.ruang_belajar.push({ id: "rng-" + Date.now(), ...payload });
     savePreviewDB(); window.closeModal(); showToast("Ruang dibuat!"); renderApp();
   };
@@ -1986,33 +2263,44 @@
   window.openAddPesertaModal = function(roomId) {
     openModal(`
       <div class="card-header"><div class="card-title">Tambah Nama Terdaftar</div></div>
-      <div class="form-group"><label>Nama Lengkap</label><input type="text" id="nPName" class="form-control" /></div>
+      <div class="form-group"><label>Nama Lengkap</label><input type="text" id="nPName" class="form-control" placeholder="Nama lengkap peserta..." /></div>
+      <div class="form-group"><label>Kode Pribadi Setor Rekaman (Opsional, Otomatis jika dikosongkan)</label><input type="text" id="nPKode" class="form-control" placeholder="Contoh: ZAI-101" style="text-transform:uppercase;font-weight:700;" /></div>
       <div class="form-grid">
-        <div class="form-group"><label>Mulai QS.</label><select id="nPSurah" class="form-control">${JUZ30_SURAHS.map(s=>`<option value="${s.no}">${s.no}. QS. ${s.nama}</option>`).join("")}</select></div>
+        <div class="form-group"><label>Mulai QS.</label><select id="nPSurah" class="form-control">${JUZ30_SURAHS.map(s=>`<option value="${s.no}">${s.no}. QS. ${s.nama} (${s.ayat} Ayat)</option>`).join("")}</select></div>
         <div class="form-group"><label>Ayat Awal</label><input type="number" id="nPAwal" class="form-control" value="1" min="1" /></div>
-        <div class="form-group"><label>Ayat Akhir</label><input type="number" id="nPAkhir" class="form-control" value="10" min="1" /></div>
+        <div class="form-group"><label>Ayat Akhir</label><input type="number" id="nPAkhir" class="form-control" value="40" min="1" /></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button class="btn btn-soft" onclick="window.closeModal()">Batal</button><button class="btn btn-primary" onclick="window.saveNewPeserta('${roomId}')">Daftarkan</button></div>
     `);
   };
   window.saveNewPeserta = async function(roomId) {
     const nama = document.getElementById("nPName").value.trim(); if(!nama) return showToast("Nama wajib diisi!", true);
-    const payload = { ruang_id: roomId, nama_peserta: nama, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
+    const customKode = (document.getElementById("nPKode")?.value || "").trim().toUpperCase() || generatePersonalCode(nama);
+    const payload = { ruang_id: roomId, nama_peserta: nama, kode_pribadi: customKode, target_surah: Number(document.getElementById("nPSurah").value), target_ayat_awal: Number(document.getElementById("nPAwal").value), target_ayat_akhir: Number(document.getElementById("nPAkhir").value), ayat_lulus_json: [], total_ayat_lulus: 0 };
+    
+    const customMap = JSON.parse(localStorage.getItem("murajaahku_custom_codes_v2") || "{}");
+
     if(HAS_REAL_SUPABASE && supabase) {
       const { data } = await supabase.from("peserta").insert([payload]).select().single();
+      if (data?.id) {
+        customMap[data.id] = customKode;
+        localStorage.setItem("murajaahku_custom_codes_v2", JSON.stringify(customMap));
+        state.ustazSelectedPesertaId = data.id;
+      }
       await loadAllFromSupabase();
-      if (data?.id) state.ustazSelectedPesertaId = data.id;
     } else {
       const nP = { id: "pst-" + Date.now(), ...payload };
+      customMap[nP.id] = customKode;
+      localStorage.setItem("murajaahku_custom_codes_v2", JSON.stringify(customMap));
       state.db.peserta.push(nP);
       state.ustazSelectedPesertaId = nP.id;
     }
-    savePreviewDB(); window.closeModal(); showToast(`${nama} didaftarkan!`); renderApp();
+    savePreviewDB(); window.closeModal(); showToast(`${nama} (Kode: ${customKode}) didaftarkan!`); renderApp();
   };
 
   function renderAdminOverview(container) {
     document.getElementById("pageHeaderTitle").textContent = "Admin Dashboard";
-    document.getElementById("pageHeaderSub").textContent = "Manajemen Sistem Pusat";
+    document.getElementById("pageHeaderSub").textContent = "Manajemen Sistem Pusat Lengkap";
     const cats = getFeedbackCategories();
 
     container.innerHTML = `
@@ -2046,21 +2334,65 @@
         </div>
       </div>
       <div class="glass-card">
-        <div class="card-header"><div class="card-title"><i class="ri-image-edit-line"></i> Atur Logo Kiri Atas</div></div>
-        <div class="form-grid" style="align-items:end;">
-          <div class="form-group"><label>URL Logo</label><input type="text" id="adminLogoUrlInput" class="form-control" value="${state.appLogoUrl}" /></div>
-          <div class="form-group"><label>Unggah Gambar</label><input type="file" accept="image/*" class="form-control" onchange="window.handleAdminLogoUpload(event)" /></div>
+        <div class="card-header">
+          <div class="card-title"><i class="ri-image-edit-line"></i> Atur Logo Kiri Atas (Tersimpan Permanen Saat Refresh)</div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary btn-sm" onclick="window.saveAdminLogoUrl()">Simpan Logo</button><button class="btn btn-soft btn-sm" onclick="window.resetAdminLogoDefault()">Logo Default</button></div>
+        <div class="form-grid" style="align-items:end;">
+          <div class="form-group"><label>URL Logo</label><input type="text" id="adminLogoUrlInput" class="form-control" value="${state.appLogoUrl.startsWith('data:') ? '' : state.appLogoUrl}" placeholder="https://..." /></div>
+          <div class="form-group"><label>Atau Unggah File Gambar Logo</label><input type="file" accept="image/*" class="form-control" onchange="window.handleAdminLogoUpload(event)" /></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary btn-sm" onclick="window.saveAdminLogoUrl()"><i class="ri-save-line"></i> Simpan Logo Permanen</button><button class="btn btn-soft btn-sm" onclick="window.resetAdminLogoDefault()">Logo Default</button></div>
       </div>
     `;
   }
-  window.addAdminFeedbackCategory = function() { const val = document.getElementById("adminNewFeedbackCat").value.trim(); if(!val) return; if(!state.feedbackCategories.includes(val)) { state.feedbackCategories.push(val); saveFeedbackCategoriesToStorage(); renderApp(); } };
+  window.addAdminFeedbackCategory = function() { const val = document.getElementById("adminNewFeedbackCat").value.trim().replace(/^#+/, ""); if(!val) return; if(!state.feedbackCategories.includes(val)) { state.feedbackCategories.push(val); saveFeedbackCategoriesToStorage(); renderApp(); } };
   window.removeAdminFeedbackCategory = function(idx) { state.feedbackCategories.splice(idx,1); saveFeedbackCategoriesToStorage(); renderApp(); };
   window.resetDefaultFeedbackCategories = function() { state.feedbackCategories = [...DEFAULT_FEEDBACK_CATEGORIES]; saveFeedbackCategoriesToStorage(); renderApp(); };
-  window.saveAdminLogoUrl = function() { const url = document.getElementById("adminLogoUrlInput").value.trim(); if(url) { state.appLogoUrl = url; localStorage.setItem("murajaahku_custom_logo_v2", url); applyAppLogo(); showToast("Logo disimpan"); renderApp(); } };
-  window.handleAdminLogoUpload = function(ev) { const file = ev.target.files?.[0]; if(!file) return; const r = new FileReader(); r.onload = () => { state.appLogoUrl = r.result; localStorage.setItem("murajaahku_custom_logo_v2", state.appLogoUrl); applyAppLogo(); showToast("Logo diunggah"); renderApp(); }; r.readAsDataURL(file); };
-  window.resetAdminLogoDefault = function() { state.appLogoUrl = DEFAULT_LOGO_URL; localStorage.removeItem("murajaahku_custom_logo_v2"); applyAppLogo(); renderApp(); };
+
+  async function persistSystemLogoEverywhere(logoDataUrl) {
+    state.appLogoUrl = logoDataUrl;
+    localStorage.setItem("murajaahku_custom_logo_v2", logoDataUrl);
+    applyAppLogo();
+    if (HAS_REAL_SUPABASE && supabase) {
+      try {
+        await supabase.from("materi").delete().eq("judul", "__SYSTEM_LOGO__");
+        await supabase.from("materi").insert([{
+          judul: "__SYSTEM_LOGO__",
+          deskripsi: "Logo Utama Aplikasi",
+          nama_file: "logo.jpg",
+          file_data: logoDataUrl,
+          tanggal: new Date().toISOString().split("T")[0]
+        }]);
+      } catch (e) {}
+    }
+  }
+
+  window.saveAdminLogoUrl = async function() {
+    const url = document.getElementById("adminLogoUrlInput").value.trim();
+    if (url) {
+      await persistSystemLogoEverywhere(url);
+      showToast("Logo berhasil disimpan permanen!");
+      renderApp();
+    }
+  };
+  window.handleAdminLogoUpload = async function(ev) {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    const compressedDataUrl = await compressImageForPermanentStorage(file);
+    await persistSystemLogoEverywhere(compressedDataUrl);
+    showToast("Logo berhasil diunggah & disimpan permanen!");
+    renderApp();
+  };
+  window.resetAdminLogoDefault = async function() {
+    state.appLogoUrl = DEFAULT_LOGO_URL;
+    localStorage.setItem("murajaahku_custom_logo_v2", DEFAULT_LOGO_URL);
+    if (HAS_REAL_SUPABASE && supabase) {
+      try { await supabase.from("materi").delete().eq("judul", "__SYSTEM_LOGO__"); } catch (e) {}
+    }
+    applyAppLogo();
+    showToast("Logo dikembalikan ke default");
+    renderApp();
+  };
 
   function renderAdminUstaz(container) {
     document.getElementById("pageHeaderTitle").textContent = "Data Ustaz";
@@ -2089,7 +2421,12 @@
           </div>
           <div class="form-group">
             <label>Password Login</label>
-            <input type="text" id="adminRegPass" class="form-control" placeholder="Password..." />
+            <div class="password-field-wrap">
+              <input type="password" id="adminRegPass" class="form-control" placeholder="Password..." />
+              <button type="button" class="pw-eye-btn" onclick="window.togglePasswordVisibility('adminRegPass', this)">
+                <i class="ri-eye-line"></i>
+              </button>
+            </div>
           </div>
         </div>
         <button type="button" class="btn btn-primary" onclick="window.adminAddUstazAccount()">
@@ -2218,7 +2555,7 @@
 
   function renderAdminRuangPeserta(container) {
     document.getElementById("pageHeaderTitle").textContent = "Ruang & Peserta";
-    document.getElementById("pageHeaderSub").textContent = "Pantau Progres, Tambah & Hapus Peserta di Seluruh Ruang";
+    document.getElementById("pageHeaderSub").textContent = "Kelola Ruang, Kode Pribadi & Progres Peserta";
 
     const rooms = state.db.ruang_belajar || [];
 
@@ -2226,6 +2563,9 @@
       <div class="glass-card">
         <div class="card-header">
           <div class="card-title"><i class="ri-folder-user-line"></i> Daftar Ruang & Progres Peserta (${rooms.length} Ruang)</div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.openAddRoomModal()">
+            <i class="ri-add-circle-line"></i> Buat Ruang Baru
+          </button>
         </div>
         ${rooms.length === 0 ? `
           <p style="color:var(--text-muted);font-size:0.86rem;">Belum ada ruang belajar yang terdaftar.</p>
@@ -2260,7 +2600,7 @@
                 </div>
               ` : pesertaList.map(p => {
                 const prog = getActiveSurahProgressInfo(p);
-                const lastSetoran = state.db.setoran.find(s => s.peserta_id === p.id);
+                const lastSetoran = state.db.setoran.find(s => s.peserta_id === p.id && s.status_feedback !== "Menunggu Evaluasi");
                 return `
                   <div class="list-row" style="margin-bottom:8px;background:#f8fafc;">
                     <div class="row-left">
@@ -2268,10 +2608,13 @@
                       <div class="row-info" style="width:100%;">
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                           <h4>${p.nama_peserta}</h4>
-                          <span class="badge badge-lulus">Progres: ${prog.persen}%</span>
+                          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <span class="badge badge-kode"><i class="ri-key-2-line"></i> Kode Pribadi: <strong>${p.kode_pribadi || '-'}</strong></span>
+                            <span class="badge badge-lulus">Progres: ${prog.lulusCount} / ${prog.totalAyatTarget} Ayat (${prog.persen}%)</span>
+                          </div>
                         </div>
                         <p style="margin-top:4px;font-size:0.8rem;color:#0f172a;font-weight:600;">
-                          Surah Aktif: <strong>QS. ${prog.namaSurah}</strong> (${prog.lulusCount} / ${prog.totalAyatTarget} Ayat Lulus)
+                          Surah Aktif: <strong>QS. ${prog.namaSurah}</strong> (${prog.lulusCount} / ${prog.totalAyatTarget} Ayat)
                           ${lastSetoran ? ` • Status Terakhir: <strong>${lastSetoran.status_feedback}</strong>` : ''}
                         </p>
                         <div class="progress-wrap" style="margin-top:6px;">
@@ -2280,8 +2623,11 @@
                       </div>
                     </div>
                     <div class="row-right">
+                      <button type="button" class="btn btn-soft btn-sm" onclick="window.openEditKodePribadiModal('${p.id}')">
+                        <i class="ri-key-line"></i> Custom Kode
+                      </button>
                       <button type="button" class="btn btn-danger btn-sm" onclick="window.adminDeletePeserta('${p.id}')">
-                        <i class="ri-user-unfollow-line"></i> Hapus Peserta
+                        <i class="ri-user-unfollow-line"></i> Hapus
                       </button>
                     </div>
                   </div>
@@ -2323,7 +2669,7 @@
     document.getElementById("pageHeaderTitle").textContent = "Kelola Materi PDF";
     document.getElementById("pageHeaderSub").textContent = "Tambah & Hapus Modul PDF untuk Beranda";
 
-    const listMateri = state.db.materi || [];
+    const listMateri = (state.db.materi || []).filter(m => m.judul !== "__SYSTEM_LOGO__");
 
     container.innerHTML = `
       <div class="modern-workspace-card">
@@ -2371,11 +2717,11 @@
               <div class="row-info">
                 <h4>${m.judul}</h4>
                 <p>${m.deskripsi || '-'}</p>
-                <span style="font-size:0.72rem;color:var(--text-muted);">${m.nama_file || 'Materi.pdf'} • ${m.tanggal || ''}</span>
+                <span style="font-size:0.72rem;color:var(--text-muted);">${m.nama_file || m.file_name || 'Materi.pdf'} • ${m.tanggal || ''}</span>
               </div>
             </div>
             <div class="row-right">
-              <a href="${m.file_data}" download="${m.nama_file || 'Materi.pdf'}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+              <a href="${m.file_data || m.file_url}" download="${m.nama_file || m.file_name || 'Materi.pdf'}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
                 <i class="ri-download-2-line"></i> Unduh
               </a>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.adminDeleteMateri('${m.id}')">
@@ -2457,9 +2803,32 @@
   };
 
   function renderAdminLogData(container) {
-    document.getElementById("pageHeaderTitle").textContent = "Log Data";
-    document.getElementById("pageHeaderSub").textContent = "Histori aktivitas setoran";
-    container.innerHTML = `<div class="glass-card"><div class="card-header"><div class="card-title">Histori Setoran (${state.db.setoran.length})</div></div>${state.db.setoran.map(s => `<div class="list-row"><div class="row-left"><div class="avatar-circle"><i class="ri-file-line"></i></div><div class="row-info"><h4>QS. ${s.nama_surah} (${s.status_feedback})</h4><p>${s.tanggal_kegiatan}</p></div></div><div class="row-right"><button class="btn btn-danger btn-sm" onclick="window.adminDeleteSetoran('${s.id}')">Hapus</button></div></div>`).join("")}</div>`;
+    document.getElementById("pageHeaderTitle").textContent = "Log Data Setoran";
+    document.getElementById("pageHeaderSub").textContent = "Kelola seluruh histori setoran & rekaman suara";
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header"><div class="card-title"><i class="ri-file-list-3-line"></i> Histori Setoran & Rekaman (${state.db.setoran.length})</div></div>
+        ${state.db.setoran.length === 0 ? `<p style="color:var(--text-muted);font-size:0.86rem;">Belum ada log setoran.</p>` : state.db.setoran.map(s => {
+          const p = state.db.peserta.find(x => x.id === s.peserta_id);
+          const rm = state.db.ruang_belajar.find(x => x.id === s.ruang_id);
+          return `
+            <div class="list-row">
+              <div class="row-left">
+                <div class="avatar-circle"><i class="${s.audio_data ? 'ri-mic-line' : 'ri-file-line'}"></i></div>
+                <div class="row-info">
+                  <h4>${p ? p.nama_peserta : 'Peserta'} — QS. ${s.nama_surah} Ayat ${s.ayat_awal}–${s.ayat_akhir} (${s.status_feedback})</h4>
+                  <p>${s.tanggal_kegiatan} • Ruang: ${rm ? rm.nama_ruang : '-'}</p>
+                </div>
+              </div>
+              <div class="row-right">
+                ${s.audio_data ? `<button class="btn btn-outline btn-sm" onclick="window.openEvaluateAudioModal('${s.id}')">Ulas</button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="window.adminDeleteSetoran('${s.id}')">Hapus</button>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
   window.adminDeleteSetoran = async function(id) { const tgt = state.db.setoran.find(s=>s.id===id); state.db.setoran = state.db.setoran.filter(s=>s.id!==id); if(tgt) recomputePesertaProgressFromSetoran(tgt.peserta_id); if(HAS_REAL_SUPABASE && supabase) await supabase.from("setoran").delete().eq("id",id); savePreviewDB(); renderApp(); };
 
