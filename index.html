@@ -213,6 +213,7 @@
     .basmalah-card { background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%); border: 1.5px solid #a7f3d0; border-radius: var(--radius-md); padding: 18px 20px; text-align: center; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
     .basmalah-arabic { font-family: 'Amiri', serif; font-size: 1.85rem; color: #065f46; line-height: 2; direction: rtl; }
     .basmalah-latin { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+    .ayah-latin-text { font-size: 0.86rem; color: var(--primary-deep); font-style: italic; font-weight: 600; line-height: 1.55; margin-bottom: 6px; }
     .waqaf-legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
     .waqaf-legend-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 9px 11px; display: flex; align-items: center; gap: 10px; }
     .waqaf-symbol-box { min-width: 38px; height: 38px; border-radius: 8px; background: var(--primary-soft); color: var(--primary-dark); font-family: 'Amiri', serif; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid #a7f3d0; }
@@ -578,9 +579,20 @@
   }
 
   function getNextContinuationPoint(peserta, currentDate) {
-    const history = (state.db.setoran || [])
-      .filter(s => s.peserta_id === peserta?.id && s.status_feedback !== "Menunggu Evaluasi" && (!currentDate || s.tanggal_kegiatan < currentDate))
-      .sort((a, b) => String(b.tanggal_kegiatan).localeCompare(String(a.tanggal_kegiatan)));
+    const allEvaluated = (state.db.setoran || [])
+      .filter(s => s.peserta_id === peserta?.id && s.status_feedback !== "Menunggu Evaluasi");
+
+    // Utamakan setoran dari tanggal sebelum currentDate; jika tidak ada, gunakan setoran terakhir yang tercatat
+    const priorHistory = currentDate
+      ? allEvaluated.filter(s => s.tanggal_kegiatan < currentDate)
+      : allEvaluated;
+
+    const history = (priorHistory.length > 0 ? priorHistory : allEvaluated)
+      .sort((a, b) => {
+        const cmpDate = String(b.tanggal_kegiatan || "").localeCompare(String(a.tanggal_kegiatan || ""));
+        if (cmpDate !== 0) return cmpDate;
+        return String(b.created_at || b.id || "").localeCompare(String(a.created_at || a.id || ""));
+      });
 
     if (history.length > 0) {
       const last = history[0];
@@ -588,23 +600,40 @@
       if (last.status_feedback === "Lulus") {
         const nextStart = Number(last.ayat_akhir || 1) + 1;
         if (nextStart <= surahObj.ayat) {
-          return { surahNo: surahObj.no, ayatAwal: nextStart, ayatAkhir: surahObj.ayat, lastInfo: `Melanjutkan setelah QS. ${surahObj.nama} ayat ${last.ayat_akhir} (${last.tanggal_kegiatan})` };
+          return {
+            surahNo: surahObj.no,
+            ayatAwal: nextStart,
+            ayatAkhir: surahObj.ayat,
+            lastInfo: `Pertemuan sebelumnya Lulus sampai ayat ${last.ayat_akhir}, otomatis lanjut mulai ayat ${nextStart} (QS. ${surahObj.nama})`
+          };
         } else {
           const nextSurahNo = surahObj.no < 114 ? surahObj.no + 1 : 78;
           const nextSurahObj = getSurahByNo(nextSurahNo);
-          return { surahNo: nextSurahObj.no, ayatAwal: 1, ayatAkhir: nextSurahObj.ayat, lastInfo: `QS. ${surahObj.nama} tuntas, lanjut ke QS. ${nextSurahObj.nama}` };
+          return {
+            surahNo: nextSurahObj.no,
+            ayatAwal: 1,
+            ayatAkhir: nextSurahObj.ayat,
+            lastInfo: `QS. ${surahObj.nama} tuntas, otomatis lanjut ke QS. ${nextSurahObj.nama} ayat 1`
+          };
         }
       } else {
-        return { surahNo: surahObj.no, ayatAwal: Number(last.ayat_awal || 1), ayatAkhir: Number(last.ayat_akhir || surahObj.ayat), lastInfo: `Mengulang/perbaikan QS. ${surahObj.nama} ayat ${last.ayat_awal}–${last.ayat_akhir} (${last.tanggal_kegiatan})` };
+        return {
+          surahNo: surahObj.no,
+          ayatAwal: Number(last.ayat_awal || 1),
+          ayatAkhir: Number(last.ayat_akhir || surahObj.ayat),
+          lastInfo: `Mengulang/perbaikan QS. ${surahObj.nama} ayat ${last.ayat_awal}–${last.ayat_akhir} (${last.tanggal_kegiatan})`
+        };
       }
     }
 
     const defSurah = getSurahByNo(peserta?.target_surah || 78);
+    const startAyat = Math.min(defSurah.ayat, Math.max(1, Number(peserta?.target_ayat_awal || 1)));
+    const endAyat = Math.min(defSurah.ayat, Math.max(startAyat, Number(peserta?.target_ayat_akhir || defSurah.ayat)));
     return {
       surahNo: defSurah.no,
-      ayatAwal: Number(peserta?.target_ayat_awal || 1),
-      ayatAkhir: Number(peserta?.target_ayat_akhir || defSurah.ayat),
-      lastInfo: `Target awal: QS. ${defSurah.nama}`
+      ayatAwal: startAyat,
+      ayatAkhir: endAyat,
+      lastInfo: `Mulai dari QS. ${defSurah.nama} ayat ${startAyat}`
     };
   }
 
@@ -835,7 +864,7 @@
 
     if (state.role === "public" && !["beranda", "login"].includes(state.activeMenu)) {
       showBack = true;
-      if (state.activeMenu === "login_admin") { backLabel = "Login Ustaz"; }
+      if (state.activeMenu === "login_admin") { backLabel = "Login Pembimbing"; }
     } else if (state.role === "ustaz") {
       if (state.activeMenu !== "ustaz_ringkasan") showBack = true;
       else if (state.ustazActiveRoomId) {
@@ -898,7 +927,7 @@
       }
     } else {
       const nama = state.currentUser?.nama_lengkap || state.currentUser?.email || "Pengguna";
-      const labelRole = state.role === "admin" ? "Administrator" : "Ustaz Pembimbing";
+      const labelRole = state.role === "admin" ? "Administrator" : "Pembimbing";
       uBox.innerHTML = `<div class="user-avatar">${nama.charAt(0).toUpperCase()}</div><div class="user-meta"><h4>${nama}</h4><span>${labelRole}</span></div>`;
       fBox.innerHTML = `<button class="nav-item" onclick="window.logoutSession()"><i class="ri-logout-box-r-line"></i><span>Keluar Sesi</span></button>`;
       topRight.innerHTML = `<button class="btn btn-danger btn-sm" onclick="window.logoutSession()"><i class="ri-shut-down-line"></i> Keluar</button>`;
@@ -1271,6 +1300,15 @@
     return "";
   }
 
+  function syncSetorFormWithPesertaContinuation(pesertaId, dateStr) {
+    const pObj = state.db.peserta.find(p => p.id === pesertaId);
+    if (!pObj) return;
+    const cont = getNextContinuationPoint(pObj, dateStr || state.setorSelectedDate);
+    state.setorSelectedSurah = cont.surahNo;
+    state.setorAyatAwal = cont.ayatAwal;
+    state.setorAyatAkhir = cont.ayatAkhir;
+  }
+
   function renderPublicSetorHafalan(container) {
     document.getElementById("pageHeaderTitle").textContent = "Setor Hafalan";
     document.getElementById("pageHeaderSub").textContent = "Rekam & Dengarkan Suara Sebelum Dikirim ke Ustaz";
@@ -1282,8 +1320,12 @@
     const roomIdsOfUstaz = roomsOfUstaz.map(r => r.id);
     const pesertaOfUstaz = state.db.peserta.filter(p => roomIdsOfUstaz.includes(p.ruang_id));
 
-    if (pesertaOfUstaz.length > 0 && !pesertaOfUstaz.some(p => p.id === state.setorSelectedPesertaId)) state.setorSelectedPesertaId = pesertaOfUstaz[0].id;
-    else if (pesertaOfUstaz.length === 0) state.setorSelectedPesertaId = "";
+    if (pesertaOfUstaz.length > 0 && !pesertaOfUstaz.some(p => p.id === state.setorSelectedPesertaId)) {
+      state.setorSelectedPesertaId = pesertaOfUstaz[0].id;
+      syncSetorFormWithPesertaContinuation(state.setorSelectedPesertaId, state.setorSelectedDate);
+    } else if (pesertaOfUstaz.length === 0) {
+      state.setorSelectedPesertaId = "";
+    }
 
     const activeSurahObj = getSurahByNo(state.setorSelectedSurah || 78);
     const hariSetor = getIndonesianDayName(state.setorSelectedDate);
@@ -1371,8 +1413,8 @@
   }
 
   window.handleSetorUstazChange = function(uid) { state.setorSelectedUstazId = uid; state.setorSelectedPesertaId = ""; renderApp(); };
-  window.handleSetorPesertaChange = function(pid) { state.setorSelectedPesertaId = pid; };
-  window.handleSetorDateChange = function(dVal) { state.setorSelectedDate = dVal; renderApp(); };
+  window.handleSetorPesertaChange = function(pid) { state.setorSelectedPesertaId = pid; syncSetorFormWithPesertaContinuation(pid, state.setorSelectedDate); renderApp(); };
+  window.handleSetorDateChange = function(dVal) { state.setorSelectedDate = dVal; syncSetorFormWithPesertaContinuation(state.setorSelectedPesertaId, dVal); renderApp(); };
   window.handleSetorSurahChange = function(sNo) { state.setorSelectedSurah = Number(sNo); const sObj = getSurahByNo(sNo); state.setorAyatAwal = 1; state.setorAyatAkhir = sObj.ayat; renderApp(); };
 
   function stopWaveformAndTimer() {
@@ -1606,26 +1648,26 @@
 
   function renderLoginPortal(container) {
     document.getElementById("pageHeaderTitle").textContent = "Portal Akun";
-    document.getElementById("pageHeaderSub").textContent = "Masuk atau daftar sebagai Ustaz / Ustazah";
+    document.getElementById("pageHeaderSub").textContent = "Masuk atau daftar sebagai Pembimbing";
 
     if (state.showRegisterUstaz) {
       container.innerHTML = `
         <div class="glass-card" style="max-width:500px;margin:0 auto;">
-          <div class="card-header"><div class="card-title"><i class="ri-user-add-line"></i> Buat Akun Ustaz / Ustazah Baru</div></div>
+          <div class="card-header"><div class="card-title"><i class="ri-user-add-line"></i> Buat Akun Pembimbing Baru</div></div>
           <div class="form-group">
-            <label>Pilih Panggilan / Gelar</label>
+            <label>Pilih Panggilan / Sapaan</label>
             <select id="regGelar" class="form-control">
               <option value="Ustaz">Ustaz</option>
               <option value="Ustazah">Ustazah</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Nama Lengkap (Tanpa Gelar)</label>
-            <input type="text" id="regNama" class="form-control" placeholder="Contoh: Ahmad Fauzi" />
+            <label>Nama Lengkap</label>
+            <input type="text" id="regNama" class="form-control" placeholder="Masukkan nama lengkap..." />
           </div>
           <div class="form-group">
             <label>Username Login (Unik, Tanpa @)</label>
-            <input type="text" id="regUser" class="form-control" placeholder="Contoh: ahmad" />
+            <input type="text" id="regUser" class="form-control" placeholder="Buat username unik..." />
           </div>
           <div class="form-group">
             <label>Password</label>
@@ -1651,10 +1693,10 @@
       container.innerHTML = `
         <div class="glass-card" style="max-width:500px;margin:0 auto;">
           <div class="card-header">
-            <div class="card-title"><i class="ri-user-star-line"></i> Login Ustaz / Ustazah</div>
-            <span class="badge badge-lulus">Jalur Ustaz</span>
+            <div class="card-title"><i class="ri-user-star-line"></i> Login Pembimbing</div>
+            <span class="badge badge-lulus">Ustaz & Ustazah</span>
           </div>
-          <div class="form-group"><label>Username Ustaz / Ustazah</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
+          <div class="form-group"><label>Username Pembimbing</label><input type="text" id="loginUstazUser" class="form-control" placeholder="Masukkan username..." onkeydown="if(event.key==='Enter') window.handleUstazLogin()" /></div>
           <div class="form-group">
             <label>Password</label>
             <div class="password-field-wrap">
@@ -1664,9 +1706,9 @@
               </button>
             </div>
           </div>
-          <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Ustaz</button>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px;height:44px;" onclick="window.handleUstazLogin()"><i class="ri-login-circle-line"></i> Masuk Dashboard Pembimbing</button>
           <div style="text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #f1f5f9;">
-            <span style="font-size:0.84rem;color:var(--text-muted);display:block;margin-bottom:8px;">Belum punya akun Ustaz / Ustazah?</span>
+            <span style="font-size:0.84rem;color:var(--text-muted);display:block;margin-bottom:8px;">Belum punya akun Pembimbing?</span>
             <button type="button" class="btn btn-outline btn-sm" style="width:100%;height:40px;" onclick="window.toggleRegisterUstaz(true)">
               <i class="ri-user-add-line"></i> Buat Akun Baru
             </button>
@@ -1774,7 +1816,7 @@
   window.handleUstazLogin = async function() {
     const username = (document.getElementById("loginUstazUser")?.value || "").trim();
     const password = (document.getElementById("loginUstazPass")?.value || "").trim();
-    if (!username || !password) return showToast("Isi username dan password Ustaz!", true);
+    if (!username || !password) return showToast("Isi username dan password Pembimbing!", true);
 
     if (username.includes("@") || username.toLowerCase() === "admin") {
       return showToast("Akses Ditolak! Email/Admin harus masuk melalui tombol 'Admin' di pojok kanan atas.", true);
@@ -1796,7 +1838,7 @@
     );
 
     if (!found) {
-      return showToast("Username atau password Ustaz tidak sesuai (atau akun telah dihapus Admin)!", true);
+      return showToast("Username atau password Pembimbing tidak sesuai (atau akun telah dihapus Admin)!", true);
     }
 
     state.currentUser = found;
@@ -1823,7 +1865,7 @@
       u => (u.username || "").trim().toLowerCase() === normInput
     );
     if (isUstazAccount || !email.includes("@")) {
-      return showToast("Akses Ditolak! Akun Ustaz/Ustazah harus masuk di halaman Login Ustaz (menggunakan Username tanpa @).", true);
+      return showToast("Akses Ditolak! Akun Pembimbing harus masuk di halaman Login Pembimbing (menggunakan Username tanpa @).", true);
     }
 
     if (HAS_REAL_SUPABASE && supabase) {
@@ -3235,13 +3277,14 @@
           QS. ${surahMeta.nama.toUpperCase()} (${surahMeta.arti}) • SURAH KE-${surahMeta.no} • ${surahMeta.ayat} AYAT
         </div>
         <div class="basmalah-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+        <div class="ayah-latin-text" style="margin-top:4px;margin-bottom:2px;">Bismillaahir-rahmaanir-rahiim</div>
         <div class="basmalah-latin">Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.</div>
       </div>
 
       <div class="glass-card" id="mushafAyahContainer">
         <div style="text-align:center;padding:28px;color:var(--text-muted);">
           <i class="ri-loader-4-line" style="font-size:1.8rem;color:var(--primary-dark);"></i>
-          <p style="margin-top:8px;font-weight:700;">Memuat teks Mushaf & terjemahan QS. ${surahMeta.nama}...</p>
+          <p style="margin-top:8px;font-weight:700;">Memuat teks Mushaf, bacaan Latin & terjemahan QS. ${surahMeta.nama}...</p>
         </div>
       </div>
     `;
@@ -3260,6 +3303,7 @@
           const mapped = jsonEq.data.ayat.map(item => ({
             no: Number(item.nomorAyat),
             arab: stripLeadingBasmalah(item.teksArab, surahNo, item.nomorAyat),
+            latin: item.teksLatin || "",
             terjemahan: item.teksIndonesia
           }));
           state.mushafCache[surahNo] = mapped;
@@ -3269,15 +3313,17 @@
     } catch (e) {}
 
     try {
-      const resCloud = await fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/editions/quran-uthmani,id.indonesian`);
+      const resCloud = await fetch(`https://api.alquran.cloud/v1/surah/${surahNo}/editions/quran-uthmani,en.transliteration,id.indonesian`);
       if (resCloud.ok) {
         const jsonCloud = await resCloud.json();
         const arabEdition = jsonCloud?.data?.[0]?.ayahs || [];
-        const indoEdition = jsonCloud?.data?.[1]?.ayahs || [];
+        const latinEdition = jsonCloud?.data?.[1]?.ayahs || [];
+        const indoEdition = jsonCloud?.data?.[2]?.ayahs || [];
         if (arabEdition.length > 0) {
           const mapped = arabEdition.map((a, idx) => ({
             no: Number(a.numberInSurah),
             arab: stripLeadingBasmalah(a.text, surahNo, a.numberInSurah),
+            latin: latinEdition[idx]?.text || "",
             terjemahan: indoEdition[idx]?.text || ""
           }));
           state.mushafCache[surahNo] = mapped;
@@ -3313,7 +3359,11 @@
         filtered = ayahs.filter(a => a.no === targetNo);
       } else {
         const lower = q.toLowerCase();
-        filtered = ayahs.filter(a => (a.terjemahan || "").toLowerCase().includes(lower) || String(a.no).includes(lower));
+        filtered = ayahs.filter(a =>
+          (a.terjemahan || "").toLowerCase().includes(lower) ||
+          (a.latin || "").toLowerCase().includes(lower) ||
+          String(a.no).includes(lower)
+        );
       }
     }
 
@@ -3330,6 +3380,11 @@
         <div class="font-arabic" style="text-align:right;margin-bottom:12px;">
           ${formatArabicWithWaqaf(a.arab, a.no)}
         </div>
+        ${a.latin ? `
+          <div class="ayah-latin-text">
+            ${highlightTranslationText(a.latin, q)}
+          </div>
+        ` : ''}
         <p style="font-size:0.88rem;color:#334155;line-height:1.6;">
           ${highlightTranslationText(a.terjemahan, q)}
         </p>
@@ -3354,6 +3409,7 @@
           QS. ${surahMeta.nama.toUpperCase()} (${surahMeta.arti}) • SURAH KE-${surahMeta.no} • ${surahMeta.ayat} AYAT
         </div>
         <div class="basmalah-arabic">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+        <div class="ayah-latin-text" style="margin-top:4px;margin-bottom:2px;">Bismillaahir-rahmaanir-rahiim</div>
         <div class="basmalah-latin">Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.</div>
       `;
     }
