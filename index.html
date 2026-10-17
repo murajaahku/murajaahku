@@ -43,10 +43,10 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    html, body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-main); color: var(--text-main); overflow-x: hidden; font-size: 15px; }
+    html, body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-main); color: var(--text-main); overflow-x: hidden; font-size: 15px; height: 100%; overscroll-behavior-y: none; }
 
     #murajaahku-root {
-      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
       background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 60%, #ffffff 100%);
       z-index: 2147483640; display: flex; overflow: hidden;
     }
@@ -55,7 +55,7 @@
 
     /* SIDEBAR DESKTOP */
     .app-sidebar {
-      width: 268px; height: 100vh;
+      width: 268px; height: 100vh; height: 100dvh;
       background: linear-gradient(180deg, #059669 0%, #047857 100%);
       color: #ffffff; display: flex; flex-direction: column; padding: 0 16px 20px; flex-shrink: 0; z-index: 20;
     }
@@ -91,8 +91,8 @@
     .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); }
 
     /* MAIN AREA */
-    .app-main { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
-    .app-topbar { position: sticky; top: 0; z-index: 15; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 70px; }
+    .app-main { flex: 1; height: 100vh; height: 100dvh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; display: flex; flex-direction: column; position: relative; scroll-behavior: smooth; }
+    .app-topbar { position: sticky; top: 0; z-index: 15; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 70px; flex-shrink: 0; }
     
     .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .mobile-logo-wide-wrap { display: none; background: #ffffff; border-radius: 12px; padding: 4px 10px; height: 60px; width: 196px; flex-shrink: 0; align-items: center; justify-content: center; box-shadow: none !important; border: none !important; overflow: hidden; cursor: pointer; }
@@ -105,7 +105,7 @@
     .back-btn-top i { font-size: 1.1rem; }
     .back-btn-top:hover { border-color: var(--primary); color: var(--primary-dark); background: var(--primary-soft); }
 
-    .content-container { max-width: 980px; width: 100%; margin: 0 auto; padding: 20px 24px 110px; }
+    .content-container { max-width: 980px; width: 100%; margin: 0 auto; padding: 20px 24px 140px; flex: 1 0 auto; }
 
     /* HERO BANNER HIJAU */
     .hero-banner { background: linear-gradient(135deg, #10b981 0%, #059669 60%, #047857 100%); border-radius: var(--radius-lg); padding: 22px 26px; color: #ffffff; box-shadow: var(--shadow-green); position: relative; overflow: hidden; margin-bottom: 20px; }
@@ -247,9 +247,9 @@
     @media (max-width: 900px) {
       .app-sidebar { display: none; }
       .mobile-logo-wide-wrap { display: flex; }
-      .bottom-nav { display: grid; }
+      .bottom-nav { display: grid; bottom: max(12px, env(safe-area-inset-bottom)); }
       .app-topbar { padding: 10px 16px; }
-      .content-container { padding: 16px 16px 100px; }
+      .content-container { padding: 16px 16px calc(155px + env(safe-area-inset-bottom, 20px)); }
       .topbar-title { display: none; }
       .mushaf-search-grid { grid-template-columns: 1fr; gap: 10px; }
       .symmetric-filter-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -2113,10 +2113,13 @@
                   <div class="avatar-circle"><i class="ri-team-line"></i></div>
                   <div class="row-info">
                     <h4>${r.nama_ruang}</h4>
-                    <p>Kode Pengunjung: <strong style="color:var(--primary-dark);">${r.kode_ruang}</strong> • ${jml} Peserta</p>
+                    <p>Kode Pengunjung: <strong style="color:var(--primary-dark);">${r.kode_ruang}</strong> • ${jml} Peserta ${r.deskripsi ? `• ${r.deskripsi}` : ''}</p>
                   </div>
                 </div>
                 <div class="row-right">
+                  <button class="btn btn-soft btn-sm" onclick="window.openEditRoomModal('${r.id}')">
+                    <i class="ri-edit-2-line"></i> Edit Ruang
+                  </button>
                   <button class="btn btn-soft btn-sm" onclick="window.openUstazPublicPreview('${r.id}')">
                     <i class="ri-eye-line"></i> Preview Publik
                   </button>
@@ -2151,11 +2154,14 @@
             <div>
               <span class="hero-badge"><i class="ri-user-settings-line"></i> Manajemen Peserta & Kode Pribadi</span>
               <h3>${activeRoom.nama_ruang}</h3>
-              <p>Halaman khusus bagi Ustaz / Ustazah untuk mendaftarkan peserta baru serta mengatur Kode Pribadi setoran rekaman.</p>
+              <p>Kode Ruangan: <strong>${activeRoom.kode_ruang}</strong> ${activeRoom.deskripsi ? `• ${activeRoom.deskripsi}` : ''}</p>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn" style="background:#ffffff;color:var(--primary-dark);" onclick="window.openAddPesertaModal('${activeRoom.id}')">
                 <i class="ri-user-add-line"></i> Buat Peserta Baru
+              </button>
+              <button class="btn btn-outline" style="background:rgba(255,255,255,0.15);color:#ffffff;border-color:rgba(255,255,255,0.4);" onclick="window.openEditRoomModal('${activeRoom.id}')">
+                <i class="ri-edit-2-line"></i> Edit Ruang
               </button>
               <button class="btn btn-outline" style="background:rgba(255,255,255,0.15);color:#ffffff;border-color:rgba(255,255,255,0.4);" onclick="window.openUstazPublicPreview('${activeRoom.id}')">
                 <i class="ri-eye-line"></i> Preview Publik
@@ -2285,6 +2291,9 @@
           <span class="badge ${state.ustazEvalStep === 3 ? 'badge-lulus' : 'badge-kode'}" style="cursor:${selectedPeserta ? 'pointer' : 'not-allowed'};padding:6px 10px;opacity:${selectedPeserta ? 1 : 0.5};" onclick="${selectedPeserta ? 'window.goToUstazStep(3)' : ''}">3. Input / Edit Setoran</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-soft btn-sm" onclick="window.openEditRoomModal('${activeRoom.id}')">
+            <i class="ri-edit-2-line"></i> Edit Ruang
+          </button>
           <button type="button" class="btn btn-soft btn-sm" onclick="window.openUstazPublicPreview('${activeRoom.id}')">
             <i class="ri-eye-line"></i> Preview Publik
           </button>
@@ -2889,6 +2898,76 @@
     savePreviewDB(); window.closeModal(); showToast("Ruang dibuat!"); renderApp();
   };
 
+  window.openEditRoomModal = function(roomId) {
+    const r = state.db.ruang_belajar.find(x => x.id === roomId);
+    if (!r) return showToast("Data ruang tidak ditemukan!", true);
+    const isAdmin = state.role === "admin";
+    const ustazOptions = (state.db.ustaz || []).map(u => `<option value="${u.id}" ${u.id === r.ustaz_id ? 'selected' : ''}>${u.nama_lengkap}</option>`).join("");
+    openModal(`
+      <div class="card-header"><div class="card-title"><i class="ri-edit-2-line"></i> Edit Ruang Belajar</div></div>
+      ${isAdmin ? `<div class="form-group"><label>Pembimbing (Ustaz / Ustazah)</label><select id="editRUstaz" class="form-control">${ustazOptions}</select></div>` : ''}
+      <div class="form-group">
+        <label>Nama Ruang</label>
+        <input type="text" id="editRName" class="form-control" value="${r.nama_ruang || ''}" placeholder="Contoh: Halaqah Al-Fajr" />
+      </div>
+      <div class="form-group">
+        <label>Kode Ruang (Akses Pengunjung)</label>
+        <input type="text" id="editRCode" class="form-control" value="${r.kode_ruang || ''}" style="text-transform:uppercase;font-weight:800;letter-spacing:1px;" placeholder="Contoh: FAJR30" />
+      </div>
+      <div class="form-group">
+        <label>Keterangan Ruang</label>
+        <input type="text" id="editRDesc" class="form-control" value="${r.deskripsi || ''}" placeholder="Keterangan kelas..." />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+        <button type="button" class="btn btn-soft" onclick="window.closeModal()">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="window.saveEditedRoom('${r.id}')"><i class="ri-save-line"></i> Simpan Perubahan</button>
+      </div>
+    `);
+  };
+
+  window.saveEditedRoom = async function(roomId) {
+    const r = state.db.ruang_belajar.find(x => x.id === roomId);
+    if (!r) return;
+    const newNama = (document.getElementById("editRName")?.value || "").trim();
+    const newKode = (document.getElementById("editRCode")?.value || "").trim().toUpperCase();
+    const newDesc = (document.getElementById("editRDesc")?.value || "").trim();
+    const newUstazId = document.getElementById("editRUstaz")?.value || r.ustaz_id;
+
+    if (!newNama || !newKode) {
+      return showToast("Nama ruang dan Kode ruang tidak boleh kosong!", true);
+    }
+
+    const isDupCode = state.db.ruang_belajar.some(other => other.id !== roomId && (other.kode_ruang || "").trim().toUpperCase() === newKode);
+    if (isDupCode) {
+      return showToast(`Kode ruang "${newKode}" sudah digunakan oleh ruang lain!`, true);
+    }
+
+    r.nama_ruang = newNama;
+    r.kode_ruang = newKode;
+    r.deskripsi = newDesc;
+    r.ustaz_id = newUstazId;
+
+    if (state.unlockedRoom && state.unlockedRoom.id === roomId) {
+      state.unlockedRoom = r;
+    }
+
+    if (HAS_REAL_SUPABASE && supabase) {
+      const { error } = await supabase
+        .from("ruang_belajar")
+        .update({ nama_ruang: newNama, kode_ruang: newKode, deskripsi: newDesc, ustaz_id: newUstazId })
+        .eq("id", roomId);
+      if (error) {
+        return showToast("Gagal memperbarui ruang di database: " + error.message, true);
+      }
+      await loadAllFromSupabase();
+    }
+
+    savePreviewDB();
+    window.closeModal();
+    showToast(`Ruang "${newNama}" (Kode: ${newKode}) berhasil diperbarui!`);
+    renderApp();
+  };
+
   window.openAddPesertaModal = function(roomId) {
     openModal(`
       <div class="card-header"><div class="card-title">Tambah Nama Terdaftar</div></div>
@@ -3280,10 +3359,13 @@
                     ${r.nama_ruang} <span class="badge badge-lulus" style="margin-left:6px;">Kode: ${r.kode_ruang}</span>
                   </h4>
                   <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">
-                    Pembimbing: <strong>${ust ? ust.nama_lengkap : '-'}</strong> • ${pesertaList.length} Peserta
+                    Pembimbing: <strong>${ust ? ust.nama_lengkap : '-'}</strong> • ${pesertaList.length} Peserta ${r.deskripsi ? `• ${r.deskripsi}` : ''}
                   </p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.openEditRoomModal('${r.id}')">
+                    <i class="ri-edit-2-line"></i> Edit Ruang
+                  </button>
                   <button type="button" class="btn btn-primary btn-sm" onclick="window.openAddPesertaModal('${r.id}')">
                     <i class="ri-user-add-line"></i> Tambah Peserta
                   </button>
