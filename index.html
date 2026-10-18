@@ -129,11 +129,9 @@
     .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .mobile-logo-wide-wrap { display: none; background: #ffffff; border-radius: 12px; padding: 4px 10px; height: 60px; width: 196px; flex-shrink: 0; align-items: center; justify-content: center; box-shadow: none !important; border: none !important; overflow: hidden; cursor: pointer; }
     .mobile-logo-wide { width: 100%; height: 100%; object-fit: contain; display: block; }
-    .topbar-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .desktop-title-mini-logo { width: 34px; height: 34px; border-radius: 9px; object-fit: contain; background: #ffffff; border: 1px solid #d1fae5; padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12); cursor: pointer; }
-    .topbar-title { min-width: 0; }
-    .topbar-title h2 { font-size: 0.98rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
-    .topbar-title p { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-title-wrap { display: none !important; }
+    .desktop-title-mini-logo { display: none !important; }
+    .topbar-title { display: none !important; }
     .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
     /* ANIMASI LAYAR MEMUAT (SPLASH SCREEN ANTI-PECAH SAAT JARINGAN LAMBAT) */
@@ -396,12 +394,9 @@
 </head>
 <body>
 
-<!-- ANIMASI MEMUAT SAAT WEB DIBUKA -->
+<!-- ANIMASI MEMUAT SAAT WEB DIBUKA (TANPA LOGO) -->
 <div id="appSplashLoader">
   <div class="splash-card">
-    <div class="splash-logo-box">
-      <img id="splashBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murojaahku" />
-    </div>
     <div class="splash-spinner-ring"></div>
     <div class="splash-title">Memuat Murojaahku...</div>
     <div class="splash-sub" id="splashStatusText">Menyiapkan ruang belajar & aset tampilan</div>
@@ -432,8 +427,7 @@
           <img id="mobileBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Murojaahku" class="mobile-logo-wide" onerror="window.handleBrandLogoError(this)" />
         </div>
         <div id="topbarBackSlot"></div>
-        <div class="topbar-title-wrap">
-          <img id="desktopMiniBrandLogo" src="https://res.cloudinary.com/dtz0urit6/image/upload/w_96,h_96,c_pad,b_white,q_auto:best,f_jpg/cloudinary-tools-uploads/zuysgcrfwauklihxsvut" referrerpolicy="no-referrer" alt="Logo" class="desktop-title-mini-logo" onclick="window.switchMenu('beranda')" onerror="window.handleBrandLogoError(this)" title="Murojaahku" />
+        <div class="topbar-title-wrap" style="display:none;">
           <div class="topbar-title">
             <h2 id="pageHeaderTitle">Beranda</h2>
             <p id="pageHeaderSub">Pusat Aplikasi</p>
